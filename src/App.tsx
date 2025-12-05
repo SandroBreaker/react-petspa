@@ -5,11 +5,11 @@ import { Profile, Appointment, Pet, Service } from './types';
 import { Chat } from './components/Chat';
 import { Marketplace } from './components/Marketplace';
 import { AdminPanel } from './components/Admin';
-import { Home, Sparkles, ShoppingBag, MessageCircle, Calendar, User, Menu, X, LogOut, Scissors, Droplet, Heart, CheckCircle, Clock, MapPin, Phone, Shield, ChevronLeft, CalendarDays, DollarSign } from 'lucide-react';
+import { Home, Sparkles, ShoppingBag, MessageCircle, Calendar, User, Menu, X, LogOut, Scissors, Droplet, Heart, CheckCircle, Clock, MapPin, Phone, Shield, ChevronLeft, CalendarDays, DollarSign, Plus } from 'lucide-react';
 import { formatCurrency, formatDate } from './utils/ui';
 
-// --- Simple Routing ---
-type Route = 'home' | 'services' | 'marketplace' | 'chat' | 'login' | 'register' | 'dashboard' | 'profile' | 'admin' | 'tracker' | 'user-profile' | 'pet-details' | 'appointment-details';
+// --- Routing ---
+type Route = 'home' | 'services' | 'marketplace' | 'chat' | 'login' | 'register' | 'dashboard' | 'profile' | 'admin' | 'tracker' | 'user-profile' | 'pet-details' | 'appointment-details' | 'booking-wizard';
 
 export default function App() {
   const [view, setView] = useState<Route>('home');
@@ -17,14 +17,17 @@ export default function App() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(false);
   
-  // Data State (Lifted from Dashboard)
+  // Data State
   const [pets, setPets] = useState<Pet[]>([]);
   const [apps, setApps] = useState<Appointment[]>([]);
   const [services, setServices] = useState<Service[]>([]);
 
-  // Selection State for Detail Views
+  // Selection State
   const [selectedPet, setSelectedPet] = useState<Pet | null>(null);
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
+
+  // Booking Modal State
+  const [showBookingModal, setShowBookingModal] = useState(false);
 
   // Initial Load
   useEffect(() => {
@@ -43,8 +46,7 @@ export default function App() {
           loadUserData(session.user.id);
       } else { 
           setProfile(null); 
-          setPets([]);
-          setApps([]);
+          setPets([]); setApps([]); 
           setView('home'); 
       }
     });
@@ -76,13 +78,130 @@ export default function App() {
     setView('home');
   };
 
-  // --- Helper to change view and scroll top
   const navigateTo = (v: Route) => {
       setView(v);
       window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // --- Views Components ---
+  // --- Components ---
+
+  const BookingWizard = ({ onClose }: { onClose: () => void }) => {
+      const [step, setStep] = useState(1);
+      const [wizPet, setWizPet] = useState<number | null>(null);
+      const [wizService, setWizService] = useState<Service | null>(null);
+      const [wizDate, setWizDate] = useState('');
+
+      const handleConfirm = async () => {
+          if(!wizPet || !wizService || !wizDate) return;
+          try {
+              setLoading(true);
+              const start = new Date(wizDate);
+              const end = new Date(start.getTime() + wizService.duration_minutes * 60000);
+              await api.booking.createAppointment(session.user.id, wizPet, wizService.id, start.toISOString(), end.toISOString());
+              await loadUserData(session.user.id);
+              alert('Agendamento realizado com sucesso! 🐾');
+              onClose();
+          } catch (e) {
+              alert('Erro ao agendar. Tente novamente.');
+          } finally {
+              setLoading(false);
+          }
+      };
+
+      return (
+          <div className="modal-overlay fade-in">
+              <div className="modal-content">
+                  <div className="modal-header">
+                      <h3>Agendar Banho & Tosa</h3>
+                      <button onClick={onClose} className="btn-icon-sm"><X size={20}/></button>
+                  </div>
+                  
+                  <div className="wizard-steps">
+                      <div className={`wizard-step-dot ${step >= 1 ? 'active' : ''}`}>1</div>
+                      <div className="wizard-line"></div>
+                      <div className={`wizard-step-dot ${step >= 2 ? 'active' : ''}`}>2</div>
+                      <div className="wizard-line"></div>
+                      <div className={`wizard-step-dot ${step >= 3 ? 'active' : ''}`}>3</div>
+                  </div>
+
+                  <div className="wizard-body">
+                      {step === 1 && (
+                          <div className="fade-in">
+                              <h4 className="text-center mb-4">Quem vai receber cuidados hoje?</h4>
+                              {pets.length === 0 ? (
+                                  <div className="empty-state">
+                                      <p>Você não tem pets cadastrados.</p>
+                                      <button className="btn btn-primary btn-sm" onClick={() => { onClose(); navigateTo('user-profile'); }}>Cadastrar Pet</button>
+                                  </div>
+                              ) : (
+                                  <div className="pet-selection-grid">
+                                      {pets.map(p => (
+                                          <div key={p.id} 
+                                               className={`pet-select-card ${wizPet === p.id ? 'selected' : ''}`}
+                                               onClick={() => setWizPet(p.id)}>
+                                              <div className="pet-icon">🐾</div>
+                                              <span>{p.name}</span>
+                                          </div>
+                                      ))}
+                                  </div>
+                              )}
+                              <button className="btn btn-primary full-width mt-4" disabled={!wizPet} onClick={() => setStep(2)}>Continuar</button>
+                          </div>
+                      )}
+
+                      {step === 2 && (
+                          <div className="fade-in">
+                              <h4 className="text-center mb-4">Qual serviço?</h4>
+                              <div className="services-list-wizard">
+                                  {services.map(s => (
+                                      <div key={s.id} 
+                                           className={`service-select-item ${wizService?.id === s.id ? 'selected' : ''}`}
+                                           onClick={() => setWizService(s)}>
+                                          <div style={{flex:1}}>
+                                              <div className="service-name">{s.name}</div>
+                                              <div className="service-meta">{s.duration_minutes} min</div>
+                                          </div>
+                                          <div className="service-price">{formatCurrency(s.price)}</div>
+                                      </div>
+                                  ))}
+                              </div>
+                              <div className="wizard-actions">
+                                  <button className="btn btn-ghost" onClick={() => setStep(1)}>Voltar</button>
+                                  <button className="btn btn-primary" disabled={!wizService} onClick={() => setStep(3)}>Continuar</button>
+                              </div>
+                          </div>
+                      )}
+
+                      {step === 3 && (
+                          <div className="fade-in">
+                              <h4 className="text-center mb-4">Quando?</h4>
+                              <div className="form-group">
+                                  <label>Data e Hora</label>
+                                  <input type="datetime-local" className="input-lg" value={wizDate} onChange={e => setWizDate(e.target.value)} min={new Date().toISOString().slice(0,16)}/>
+                              </div>
+                              
+                              {wizPet && wizService && wizDate && (
+                                  <div className="summary-card">
+                                      <div className="summary-row"><span>Pet:</span> <strong>{pets.find(p=>p.id===wizPet)?.name}</strong></div>
+                                      <div className="summary-row"><span>Serviço:</span> <strong>{wizService.name}</strong></div>
+                                      <div className="summary-row"><span>Valor:</span> <strong>{formatCurrency(wizService.price)}</strong></div>
+                                      <div className="summary-row"><span>Data:</span> <strong>{new Date(wizDate).toLocaleDateString()} às {new Date(wizDate).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</strong></div>
+                                  </div>
+                              )}
+
+                              <div className="wizard-actions">
+                                  <button className="btn btn-ghost" onClick={() => setStep(2)}>Voltar</button>
+                                  <button className="btn btn-primary" disabled={!wizDate || loading} onClick={handleConfirm}>
+                                      {loading ? 'Agendando...' : 'Confirmar Agendamento'}
+                                  </button>
+                              </div>
+                          </div>
+                      )}
+                  </div>
+              </div>
+          </div>
+      );
+  };
   
   const HomePage = () => (
     <>
@@ -91,7 +210,9 @@ export default function App() {
           <h1>Seu pet limpo,<br />feliz e saudável!</h1>
           <p>Confiança, carinho e tecnologia. Agendamento inteligente com IA.</p>
           <div className="hero-actions">
-            <button className="btn btn-primary hero-btn" onClick={() => navigateTo(session ? 'dashboard' : 'login')}>Agendar Banho</button>
+            <button className="btn btn-primary hero-btn" onClick={() => session ? setShowBookingModal(true) : navigateTo('login')}>
+                Agendar Agora
+            </button>
             <button className="btn btn-ghost hero-btn-outline" onClick={() => navigateTo('chat')}>
                <Sparkles size={18} style={{ marginRight: 8 }} /> Assistente IA
             </button>
@@ -100,15 +221,51 @@ export default function App() {
       </header>
       
       <div className="container">
-         <h2 className="section-title">Nossos Cuidados</h2>
+         <h2 className="section-title">Nossos Serviços</h2>
          <div className="services-preview-grid">
-            <div className="service-preview-card"><div className="service-preview-icon"><Scissors /></div><h4>Banho & Tosa</h4></div>
-            <div className="service-preview-card"><div className="service-preview-icon"><Droplet /></div><h4>Hidratação</h4></div>
-            <div className="service-preview-card"><div className="service-preview-icon"><Sparkles /></div><h4>Higiene</h4></div>
-            <div className="service-preview-card"><div className="service-preview-icon"><Heart /></div><h4>Carinho</h4></div>
+            <div className="service-preview-card" onClick={() => navigateTo('services')}>
+                <div className="service-preview-icon"><Scissors /></div><h4>Banho & Tosa</h4>
+            </div>
+            <div className="service-preview-card" onClick={() => navigateTo('services')}>
+                <div className="service-preview-icon"><Droplet /></div><h4>Hidratação</h4>
+            </div>
+            <div className="service-preview-card" onClick={() => navigateTo('services')}>
+                <div className="service-preview-icon"><Sparkles /></div><h4>Higiene</h4>
+            </div>
+            <div className="service-preview-card" onClick={() => navigateTo('marketplace')}>
+                <div className="service-preview-icon"><ShoppingBag /></div><h4>Boutique</h4>
+            </div>
          </div>
       </div>
     </>
+  );
+
+  const ServicesPage = () => (
+      <div className="container fade-in" style={{paddingTop:20}}>
+          <div className="nav-header">
+               <button className="btn-icon-sm" onClick={() => navigateTo('home')}><ChevronLeft /></button>
+               <h3>Nossos Serviços</h3>
+               <div style={{width: 44}}></div>
+          </div>
+          <div className="services-list-full">
+              {services.map(s => (
+                  <div key={s.id} className="card service-card-detailed">
+                      <div className="service-icon-large"><Scissors /></div>
+                      <div className="service-info-full">
+                          <h3>{s.name}</h3>
+                          <p>{s.description || 'Procedimento realizado por profissionais qualificados com produtos premium.'}</p>
+                          <div className="service-tags">
+                              <span className="tag-pill">⏳ {s.duration_minutes} min</span>
+                              <span className="tag-pill-price">{formatCurrency(s.price)}</span>
+                          </div>
+                      </div>
+                      <button className="btn btn-primary btn-sm" onClick={() => { if(session) setShowBookingModal(true); else navigateTo('login'); }}>
+                          Agendar
+                      </button>
+                  </div>
+              ))}
+          </div>
+      </div>
   );
 
   const LoginPage = () => {
@@ -134,8 +291,6 @@ export default function App() {
     );
   };
 
-  // --- New Detail Views ---
-
   const UserProfileView = () => (
     <div className="container fade-in" style={{ paddingTop: 20 }}>
        <div className="nav-header">
@@ -155,7 +310,11 @@ export default function App() {
            </div>
        </div>
 
-       <h3 style={{marginBottom: 16}}>Meus Pets</h3>
+       <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16}}>
+            <h3>Meus Pets</h3>
+            <button className="btn-icon-sm" style={{width:32, height:32}} onClick={() => alert('Função criar pet aqui (Mock)')}><Plus size={16}/></button>
+       </div>
+       
        {pets.length === 0 ? <p>Nenhum pet cadastrado.</p> : (
          <div className="pet-grid">
            {pets.map(p => (
@@ -202,10 +361,10 @@ export default function App() {
                <p>{selectedPet.breed || 'Sem raça definida'}</p>
                <div style={{display:'flex', justifyContent:'center', gap: 12, marginTop: 16}}>
                    {selectedPet.weight && <span className="status-badge tag-confirmed">{selectedPet.weight} kg</span>}
-                   <span className="status-badge tag-pending">🎂 {Math.floor(Math.random() * 10) + 1} anos</span>
+                   {selectedPet.notes && <span className="status-badge tag-in_progress">📝 Observações</span>}
                </div>
                {selectedPet.notes && (
-                   <div style={{marginTop: 20, background: '#FFF9C4', padding: 12, borderRadius: 12, color: '#FBC02D', fontSize: '0.9rem'}}>
+                   <div style={{marginTop: 20, background: '#FFF9C4', padding: 12, borderRadius: 12, color: '#FBC02D', fontSize: '0.9rem', textAlign: 'left'}}>
                       <strong>Notas:</strong> {selectedPet.notes}
                    </div>
                )}
@@ -331,74 +490,50 @@ export default function App() {
   };
 
   const Dashboard = () => {
-    // Booking Form State
-    const [selPet, setSelPet] = useState('');
-    const [selServ, setSelServ] = useState('');
-    const [date, setDate] = useState('');
-
-    const handleBook = async (e: React.FormEvent) => {
-       e.preventDefault();
-       try {
-         const serv = services.find(s => s.id === Number(selServ));
-         if(!serv) return;
-         const start = new Date(date);
-         const end = new Date(start.getTime() + serv.duration_minutes * 60000);
-         await api.booking.createAppointment(session.user.id, Number(selPet), serv.id, start.toISOString(), end.toISOString());
-         alert('Agendado!');
-         loadUserData(session.user.id); // Refresh
-       } catch (err) { console.error(err); alert('Erro ao agendar'); }
-    };
-
     return (
       <div className="container dashboard-grid" style={{paddingTop: 24}}>
-         <div>
+         {/* Left Column: User Context */}
+         <div className="dash-col-left">
             <div className="card dashboard-header-card clickable-card" onClick={() => navigateTo('user-profile')}>
-               <div className="dashboard-welcome"><h3>Olá, {profile?.full_name?.split(' ')[0]}!</h3><p>Toque para ver perfil</p></div>
+               <div className="dashboard-welcome"><h3>Olá, {profile?.full_name?.split(' ')[0]}!</h3><p>Ver meu perfil</p></div>
                <div className="dashboard-icon">
                   {profile?.full_name?.charAt(0) || '🐶'}
                </div>
             </div>
             
-            <h3 style={{marginTop:24}}>Meus Pets</h3>
-            {pets.length === 0 ? <button className="btn btn-primary btn-sm">Cadastrar Pet</button> : (
-              <div className="pet-grid">
-                {pets.map(p => (
-                   <div key={p.id} className="card pet-card clickable-card" onClick={() => { setSelectedPet(p); navigateTo('pet-details'); }}>
-                      <div className="pet-icon">🐾</div><strong>{p.name}</strong>
-                   </div>
-                ))}
-              </div>
-            )}
+            <div className="card" style={{marginTop: 24}}>
+               <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16}}>
+                   <h3 style={{margin:0}}>Meus Pets</h3>
+                   <span style={{fontSize:'0.8rem', color:'var(--primary)'}} onClick={() => navigateTo('user-profile')}>Gerenciar</span>
+               </div>
+               {pets.length === 0 ? <button className="btn btn-secondary btn-sm full-width">Cadastrar Pet</button> : (
+                 <div className="pet-grid">
+                   {pets.slice(0,4).map(p => (
+                      <div key={p.id} className="card pet-card clickable-card" onClick={() => { setSelectedPet(p); navigateTo('pet-details'); }}>
+                         <div className="pet-icon">🐾</div><strong style={{fontSize:'0.9rem'}}>{p.name}</strong>
+                      </div>
+                   ))}
+                 </div>
+               )}
+            </div>
          </div>
 
-         <div>
-            <div className="card">
-               <h3>Novo Agendamento</h3>
-               <form onSubmit={handleBook}>
-                  <div className="form-group">
-                     <label>Pet</label>
-                     <select value={selPet} onChange={e=>setSelPet(e.target.value)} required>
-                        <option value="">Selecione</option>
-                        {pets.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                     </select>
-                  </div>
-                  <div className="form-group">
-                     <label>Serviço</label>
-                     <select value={selServ} onChange={e=>setSelServ(e.target.value)} required>
-                        <option value="">Selecione</option>
-                        {services.map(s => <option key={s.id} value={s.id}>{s.name} (R$ {s.price})</option>)}
-                     </select>
-                  </div>
-                  <div className="form-group">
-                     <label>Data</label>
-                     <input type="datetime-local" value={date} onChange={e=>setDate(e.target.value)} required />
-                  </div>
-                  <button className="btn btn-primary" type="submit">Agendar</button>
-               </form>
+         {/* Right Column: Actions & History */}
+         <div className="dash-col-right">
+            {/* Call to Action - Booking */}
+            <div className="card cta-card-gradient">
+                <div>
+                   <h3 style={{color:'white'}}>Hora do Banho?</h3>
+                   <p style={{color:'rgba(255,255,255,0.9)'}}>Agende um horário para seu melhor amigo em poucos cliques.</p>
+                </div>
+                <button className="btn btn-white" onClick={() => setShowBookingModal(true)}>
+                    Agendar Agora
+                </button>
             </div>
+
             <div className="card" style={{marginTop: 20}}>
                <h3>Últimos Agendamentos</h3>
-               {apps.length === 0 ? <p style={{color:'#999'}}>Nenhum histórico.</p> : apps.slice(0, 5).map(a => (
+               {apps.length === 0 ? <p style={{color:'#999', padding:'20px 0', textAlign:'center'}}>Nenhum histórico recente.</p> : apps.slice(0, 5).map(a => (
                  <div key={a.id} className="history-item clickable-card" onClick={() => { setSelectedAppointment(a); navigateTo('appointment-details'); }}>
                     <div><strong>{a.services?.name}</strong><br/><small>{new Date(a.start_time).toLocaleDateString()}</small></div>
                     <span className={`status-badge tag-${a.status}`}>{a.status}</span>
@@ -410,12 +545,14 @@ export default function App() {
     );
   };
 
-  // --- Main Layout Render ---
+  // --- Main Render ---
   return (
     <div className={view === 'chat' ? 'mode-chat' : ''}>
+       {showBookingModal && <BookingWizard onClose={() => setShowBookingModal(false)} />}
+
        {/* Mobile Header */}
        <div className="mobile-header-bar">
-          <div className="brand-text-mobile">🐾 PetSpa</div>
+          <div className="brand-text-mobile" onClick={() => navigateTo('home')}>🐾 PetSpa</div>
           <button className="btn-icon-sm btn-icon-brand" onClick={() => navigateTo('chat')}><MessageCircle size={20}/></button>
        </div>
 
@@ -424,6 +561,7 @@ export default function App() {
           <div className="brand-text-desktop" onClick={() => navigateTo('home')}>🐾 PetSpa</div>
           <nav className="nav-links-desktop">
              <a href="#" className={`nav-link-item ${view === 'home' && 'active'}`} onClick={() => navigateTo('home')}>Início</a>
+             <a href="#" className={`nav-link-item ${view === 'services' && 'active'}`} onClick={() => navigateTo('services')}>Serviços</a>
              <a href="#" className={`nav-link-item ${view === 'marketplace' && 'active'}`} onClick={() => navigateTo('marketplace')}>Loja</a>
              <a href="#" className={`nav-link-item nav-link-cta ${view === 'chat' && 'active'}`} onClick={() => navigateTo('chat')}>Assistente IA</a>
              {session ? (
@@ -440,6 +578,7 @@ export default function App() {
 
        <main id="app">
           {view === 'home' && <HomePage />}
+          {view === 'services' && <ServicesPage />}
           {view === 'login' && <LoginPage />}
           {view === 'chat' && <Chat onNavigate={(r) => navigateTo(r as Route)} />}
           {view === 'marketplace' && <Marketplace />}
@@ -454,6 +593,12 @@ export default function App() {
        <nav className="mobile-nav">
           <a href="#" className={`nav-item ${view === 'home' ? 'active' : ''}`} onClick={() => navigateTo('home')}><span className="icon"><Home /></span></a>
           <a href="#" className={`nav-item ${view === 'marketplace' ? 'active' : ''}`} onClick={() => navigateTo('marketplace')}><span className="icon"><ShoppingBag /></span></a>
+          
+          {/* Central Action Button */}
+          <div className="nav-item-fab" onClick={() => session ? setShowBookingModal(true) : navigateTo('login')}>
+             <Plus size={28} />
+          </div>
+
           <a href="#" className={`nav-item ${view === 'chat' ? 'active' : ''}`} onClick={() => navigateTo('chat')}><span className="icon"><MessageCircle /></span></a>
           {session ? (
             <a href="#" className={`nav-item ${['dashboard', 'user-profile', 'pet-details', 'appointment-details'].includes(view) ? 'active' : ''}`} onClick={() => navigateTo('dashboard')}><span className="icon"><Calendar /></span></a>
@@ -461,7 +606,6 @@ export default function App() {
             <a href="#" className={`nav-item ${view === 'login' ? 'active' : ''}`} onClick={() => navigateTo('login')}><span className="icon"><User /></span></a>
           )}
           
-          {/* Admin Button on Mobile Footer */}
           {profile?.role === 'admin' && (
              <a href="#" className={`nav-item ${view === 'admin' ? 'active' : ''}`} onClick={() => navigateTo('admin')} style={{ color: '#FF7675' }}>
                <span className="icon"><Shield /></span>

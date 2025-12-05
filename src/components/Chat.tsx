@@ -138,7 +138,13 @@ export const Chat: React.FC<ChatProps> = ({ onNavigate }) => {
          } else {
             const myPets = await api.booking.getMyPets(session.user.id);
             const petsList = myPets.length ? myPets.map(p => p.name).join(', ') : 'Nenhum pet encontrado.';
-            node = { message: `Seus pets: ${petsList}`, options: [{label: 'Voltar', nextNode: 'START'}] };
+            node = { 
+                message: `Seus pets: ${petsList}`, 
+                options: [
+                    {label: '👤 Ver Detalhes no Perfil', action: 'navProfile'},
+                    {label: 'Voltar', nextNode: 'START'}
+                ] 
+            };
          }
          break;
 
@@ -179,6 +185,7 @@ export const Chat: React.FC<ChatProps> = ({ onNavigate }) => {
 
     if (opt.action === 'navLogin') onNavigate('login');
     if (opt.action === 'navTracker') onNavigate('dashboard');
+    if (opt.action === 'navProfile') onNavigate('user-profile');
 
     // Navegação de Nós
     if (opt.nextNode) processNode(opt.nextNode);
