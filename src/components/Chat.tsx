@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { api } from '../services/api';
-import { Pet, Service } from '../types';
-import { Send, Sparkles, User, Bot, X } from 'lucide-react';
+import { geminiService } from '../services/gemini.ts';
+import { Send, Sparkles, Bot } from 'lucide-react';
 
 interface ChatProps {
   onClose?: () => void;
@@ -15,22 +15,18 @@ interface Message {
   options?: { label: string; action?: string; payload?: any; nextNode?: string }[];
 }
 
-// Knowledge Base Data
-const TIPS_DB: Record<string, string> = {
-  'hygiene': '🚿 **Banho & Higiene:**\n- Cães de pelo curto: Banho a cada 15-30 dias.\n- Pelo longo: A cada 7-15 dias com escovação diária.\n- **Importante:** Sempre proteja os ouvidos com algodão impermeável!',
-  'food': '🍖 **Alimentação:**\n- Evite restos de comida humana.\n- **Proibidos:** Chocolate, Uva, Cebola e Alho.\n- Mantenha água fresca sempre disponível.',
-  'behavior': '🎾 **Comportamento:**\n- Passeios diários de 30min reduzem ansiedade.\n- Se o pet destrói móveis, pode estar entediado.',
-  'health': '💉 **Saúde:**\n- Vacinas V10 e Antirrábica devem ser anuais.\n- Vermífugo a cada 3-6 meses.'
-};
-
 export const Chat: React.FC<ChatProps> = ({ onNavigate }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isTyping, setIsTyping] = useState(false);
   const [flowContext, setFlowContext] = useState<any>({});
+  
+  // Controle de Modo: 'flow' (Botões/Script) ou 'ai' (Conversa Livre)
+  const [mode, setMode] = useState<'flow' | 'ai'>('flow');
+  
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
-  // Input states for dynamic forms
-  const [inputType, setInputType] = useState<'text' | 'number' | 'datetime-local' | null>(null);
+  // Estados de Input
+  const [inputType, setInputType] = useState<'text' | 'number' | 'datetime-local' | null>('text'); // Default text para IA
   const [inputValue, setInputValue] = useState('');
   const [inputHandler, setInputHandler] = useState<((val: string) => Promise<string>) | null>(null);
 
@@ -41,21 +37,23 @@ export const Chat: React.FC<ChatProps> = ({ onNavigate }) => {
     setMessages(prev => [...prev, { id: Date.now().toString(), text, sender, options }]);
   };
 
+  // --- LÓGICA DE MÁQUINA DE ESTADOS (Fluxo Rígido) ---
   const processNode = async (nodeId: string) => {
     setIsTyping(true);
-    await new Promise(r => setTimeout(r, 600)); // Fake typing delay
+    setMode('flow'); // Entra em modo fluxo
+    await new Promise(r => setTimeout(r, 600));
     setIsTyping(false);
 
-    // Dynamic Bot Logic based on Node ID
     let node: any = {};
 
     switch (nodeId) {
       case 'START':
+        setInputType('text'); // Permite digitar para IA
         node = {
-          message: 'Olá! Sou o assistente virtual da PetSpa 🐶. Como posso te ajudar hoje?',
+          message: 'Olá! Sou o assistente virtual da PetSpa 🐶. Use os botões abaixo para ações rápidas ou **digite sua dúvida** para falar com minha IA!',
           options: [
             { label: '📅 Agendar Banho', nextNode: 'FLOW_SCHEDULE_INIT' },
-            { label: '🐶 Raças & Dicas', nextNode: 'KNOWLEDGE_BASE' },
+            { label: '🧠 Dicas & Curiosidades', action: 'startAiChat' },
             { label: '🐾 Meus Pets', nextNode: 'CHECK_AUTH_PETS' },
             { label: '👩‍💻 Falar com Humano', nextNode: 'CONTACT' }
           ]
@@ -63,13 +61,14 @@ export const Chat: React.FC<ChatProps> = ({ onNavigate }) => {
         break;
       
       case 'FLOW_SCHEDULE_INIT':
+        setInputType(null); // Bloqueia texto livre durante fluxo crítico
         const user = await api.auth.getSession();
         if (!user) {
           node = { message: 'Para agendar, preciso que entre na sua conta.', options: [{ label: '🔐 Login', action: 'navLogin' }, { label: '⬅️ Voltar', nextNode: 'START' }] };
         } else {
           const pets = await api.booking.getMyPets(user.user.id);
           if (pets.length === 0) {
-            node = { message: 'Você ainda não tem pets. Vamos cadastrar?', options: [{ label: 'Sim', nextNode: 'START' }] }; // Simplify for brevity
+            node = { message: 'Você ainda não tem pets. Vamos cadastrar?', options: [{ label: 'Sim', nextNode: 'START' }] };
           } else {
             node = {
               message: 'Para qual pet seria o agendamento?',
@@ -107,6 +106,7 @@ export const Chat: React.FC<ChatProps> = ({ onNavigate }) => {
         break;
 
       case 'FLOW_SCHEDULE_CONFIRM':
+        setInputType(null);
         const dateStr = new Date(flowContext.appointmentTime).toLocaleString('pt-BR');
         node = {
           message: `Confirmando: Banho dia ${dateStr}. Posso agendar?`,
@@ -124,21 +124,21 @@ export const Chat: React.FC<ChatProps> = ({ onNavigate }) => {
         };
         break;
 
-      case 'KNOWLEDGE_BASE':
+      case 'CONTACT':
         node = {
-           message: 'O que deseja saber?',
-           options: Object.keys(TIPS_DB).map(k => ({ label: k.toUpperCase(), action: 'showTip', payload: k, nextNode: 'START' }))
+           message: 'Você pode nos ligar no (11) 99999-9999 ou nos visitar na Av. Pet, 123.',
+           options: [{ label: 'Voltar', nextNode: 'START' }]
         };
         break;
       
       case 'CHECK_AUTH_PETS':
-         // Simplified check
          const session = await api.auth.getSession();
          if(!session) {
             node = { message: 'Faça login primeiro.', options: [{label: 'Login', action: 'navLogin'}] };
          } else {
             const myPets = await api.booking.getMyPets(session.user.id);
-            node = { message: `Seus pets: ${myPets.map(p => p.name).join(', ')}`, options: [{label: 'Voltar', nextNode: 'START'}] };
+            const petsList = myPets.length ? myPets.map(p => p.name).join(', ') : 'Nenhum pet encontrado.';
+            node = { message: `Seus pets: ${petsList}`, options: [{label: 'Voltar', nextNode: 'START'}] };
          }
          break;
 
@@ -152,6 +152,13 @@ export const Chat: React.FC<ChatProps> = ({ onNavigate }) => {
   const handleOption = async (opt: any) => {
     addMessage(opt.label, 'user');
     
+    // Actions Específicas
+    if (opt.action === 'startAiChat') {
+        setMode('ai');
+        addMessage('Modo Inteligente ativado! 🧠\nPode perguntar sobre cuidados, raças, preços ou dicas.', 'bot', [{label: 'Voltar ao Menu', nextNode: 'START'}]);
+        return;
+    }
+
     if (opt.action === 'setFlowData') {
       setFlowContext((prev: any) => ({
         ...prev,
@@ -159,6 +166,7 @@ export const Chat: React.FC<ChatProps> = ({ onNavigate }) => {
         ...(opt.payload.extraKey ? { [opt.payload.extraKey]: opt.payload.extraValue } : {})
       }));
     }
+
     if (opt.action === 'finalizeSchedule') {
       try {
          const { petId, serviceId, appointmentTime, serviceDuration } = flowContext;
@@ -166,27 +174,48 @@ export const Chat: React.FC<ChatProps> = ({ onNavigate }) => {
          const end = new Date(start.getTime() + (serviceDuration || 60) * 60000);
          const session = await api.auth.getSession();
          if(session) await api.booking.createAppointment(session.user.id, petId, serviceId, start.toISOString(), end.toISOString());
-      } catch (e) { console.error(e); }
+      } catch (e) { console.error(e); addMessage("Erro ao agendar.", 'bot'); }
     }
-    if (opt.action === 'showTip') {
-      addMessage(TIPS_DB[opt.payload], 'bot');
-    }
+
     if (opt.action === 'navLogin') onNavigate('login');
     if (opt.action === 'navTracker') onNavigate('dashboard');
 
+    // Navegação de Nós
     if (opt.nextNode) processNode(opt.nextNode);
   };
 
+  // --- HANDLER DE ENVIO (Input Texto/Form) ---
   const handleInputSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inputValue || !inputHandler) return;
+    if (!inputValue.trim()) return;
     
-    addMessage(inputType === 'datetime-local' ? new Date(inputValue).toLocaleString() : inputValue, 'user');
-    setInputType(null);
-    
-    const nextNode = await inputHandler(inputValue);
+    // Exibe mensagem do usuário
+    const userText = inputType === 'datetime-local' ? new Date(inputValue).toLocaleString() : inputValue;
+    addMessage(userText, 'user');
+    const rawVal = inputValue;
     setInputValue('');
-    processNode(nextNode);
+
+    // 1. Se estiver num fluxo de formulário (inputHandler definido), segue o fluxo
+    if (inputHandler) {
+        setInputType(null); // Esconde input até o próximo comando
+        const nextNode = await inputHandler(rawVal);
+        processNode(nextNode);
+        return;
+    }
+
+    // 2. Se não for fluxo, envia para o Gemini AI
+    setIsTyping(true);
+    
+    // Prepara histórico simples para o Gemini (últimas 6 mensagens para contexto)
+    const history = messages.slice(-6).map(m => ({
+        role: m.sender === 'user' ? 'user' : 'model',
+        parts: [{ text: m.text }]
+    })) as { role: 'user' | 'model', parts: [{ text: string }] }[];
+
+    const aiResponse = await geminiService.sendMessage(history, rawVal);
+    
+    setIsTyping(false);
+    addMessage(aiResponse, 'bot', [{ label: 'Voltar ao Menu', nextNode: 'START' }]);
   };
 
   useEffect(() => {
@@ -196,10 +225,12 @@ export const Chat: React.FC<ChatProps> = ({ onNavigate }) => {
   return (
     <div id="chat-layout" className="fade-in" style={{ height: 'calc(100vh - 140px)', display: 'flex', flexDirection: 'column' }}>
       <div className="chat-header">
-        <div className="chat-bot-avatar"><Bot /></div>
+        <div className="chat-bot-avatar">
+            {mode === 'ai' ? <Sparkles size={24} /> : <Bot size={24} />}
+        </div>
         <div className="chat-header-text">
           <h3>Assistente PetSpa</h3>
-          <span>IA Ativa • Dicas e Agendamento</span>
+          <span>{mode === 'ai' ? 'Gemini AI Conectado 🧠' : 'Atendimento Automático'}</span>
         </div>
       </div>
       
@@ -223,22 +254,27 @@ export const Chat: React.FC<ChatProps> = ({ onNavigate }) => {
              <span style={{ animation: 'pulse 1s infinite' }}>...</span>
            </div>
         )}
-        
-        {inputType && (
-          <form onSubmit={handleInputSubmit} className="chat-inline-form fade-in" style={{ marginTop: 16 }}>
+        <div ref={messagesEndRef} />
+      </div>
+
+      {/* Área de Input - Sempre visível se inputType != null */}
+      {inputType && (
+          <form onSubmit={handleInputSubmit} className="chat-inline-form fade-in" style={{ padding: '16px', background: 'white', borderTop: '1px solid #eee', display: 'flex', gap: 10 }}>
              <input 
                type={inputType} 
                className="chat-input-inline" 
                value={inputValue} 
                onChange={e => setInputValue(e.target.value)}
+               placeholder={inputType === 'datetime-local' ? '' : (mode === 'ai' ? 'Pergunte algo à IA...' : 'Digite aqui...')}
                min={inputType === 'datetime-local' ? new Date().toISOString().slice(0,16) : undefined}
-               required 
+               style={{ flex: 1, border: '1px solid #ddd', borderRadius: '20px', padding: '0 16px', height: '44px' }}
+               autoFocus
              />
-             <button type="submit" className="chat-btn-inline"><Send size={16} /></button>
+             <button type="submit" className="btn-icon-sm" style={{ background: 'var(--primary)', color: 'white', width: 44, height: 44 }}>
+                <Send size={18} />
+             </button>
           </form>
         )}
-        <div ref={messagesEndRef} />
-      </div>
     </div>
   );
 };

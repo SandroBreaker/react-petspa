@@ -5,7 +5,7 @@ import { Profile, Appointment, Pet, Service } from './types';
 import { Chat } from './components/Chat';
 import { Marketplace } from './components/Marketplace';
 import { AdminPanel } from './components/Admin';
-import { Home, Sparkles, ShoppingBag, MessageCircle, Calendar, User, Menu, X, LogOut, Scissors, Droplet, Heart, CheckCircle, Clock, MapPin, Phone } from 'lucide-react';
+import { Home, Sparkles, ShoppingBag, MessageCircle, Calendar, User, Menu, X, LogOut, Scissors, Droplet, Heart, CheckCircle, Clock, MapPin, Phone, Shield } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet'; // Assuming react-leaflet is okay or mock it if strictly vanilla logic
 
 // --- Simple Routing ---
@@ -237,6 +237,13 @@ export default function App() {
             <a href="#" className={`nav-item ${view === 'dashboard' ? 'active' : ''}`} onClick={() => setView('dashboard')}><span className="icon"><Calendar /></span></a>
           ) : (
             <a href="#" className={`nav-item ${view === 'login' ? 'active' : ''}`} onClick={() => setView('login')}><span className="icon"><User /></span></a>
+          )}
+          
+          {/* Admin Button on Mobile Footer */}
+          {profile?.role === 'admin' && (
+             <a href="#" className={`nav-item ${view === 'admin' ? 'active' : ''}`} onClick={() => setView('admin')} style={{ color: '#FF7675' }}>
+               <span className="icon"><Shield /></span>
+             </a>
           )}
        </nav>
     </div>
