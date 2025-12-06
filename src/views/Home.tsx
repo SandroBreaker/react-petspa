@@ -2,6 +2,7 @@
 import React from 'react';
 import { Sparkles, Scissors, Droplet, Heart, Award, ShieldCheck } from 'lucide-react';
 import { Route } from '../types';
+import { getAvatarUrl } from '../utils/ui';
 
 // URL base do Bucket
 const BASE_STORAGE_URL = 'https://qvkfoitbatyrwqbicwwc.supabase.co/storage/v1/object/public/site-assets';
@@ -17,9 +18,10 @@ export const HomePage: React.FC<HomePageProps> = ({ session, onNavigate, onOpenB
       <header 
         className="hero-header reveal-on-scroll"
         style={{ 
-            backgroundImage: `linear-gradient(to bottom, rgba(10, 10, 10, 0.9), rgba(45, 52, 54, 0.8)), url(${BASE_STORAGE_URL}/bg.jpg)`,
+            // Ajustei a opacidade para mostrar mais a foto (era 0.9 agora 0.6->0.8)
+            backgroundImage: `linear-gradient(to bottom, rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.8)), url(${BASE_STORAGE_URL}/bg.jpg)`,
             backgroundSize: 'cover',
-            backgroundPosition: 'center'
+            backgroundPosition: 'center',
         }}
       >
         <div className="hero-content">
@@ -36,38 +38,51 @@ export const HomePage: React.FC<HomePageProps> = ({ session, onNavigate, onOpenB
         </div>
       </header>
       
-      <div className="container">
-         <h2 className="section-title reveal-on-scroll">Nossos Serviços</h2>
+      <div className="container" style={{ marginTop: '-40px', position: 'relative', zIndex: 20 }}>
+         <h2 className="section-title reveal-on-scroll" style={{ marginTop: 0, marginBottom: 20 }}>Nossos Serviços</h2>
+         
          <div className="services-preview-grid">
-            <div className="service-preview-card reveal-on-scroll" onClick={() => onNavigate('services')}>
-                <div className="service-preview-icon"><Scissors /></div><h4>Banho & Tosa</h4>
+            <div className="service-img-card reveal-on-scroll" onClick={() => onNavigate('services')} style={{backgroundImage: `url(${BASE_STORAGE_URL}/1.jpg)`}}>
+                <div className="service-overlay">
+                    <div className="service-icon-float"><Scissors size={18}/></div>
+                    <h4>Banho & Tosa</h4>
+                </div>
             </div>
-            <div className="service-preview-card reveal-on-scroll delay-1" onClick={() => onNavigate('services')}>
-                <div className="service-preview-icon"><Droplet /></div><h4>Hidratação</h4>
+            <div className="service-img-card reveal-on-scroll delay-1" onClick={() => onNavigate('services')} style={{backgroundImage: `url(${BASE_STORAGE_URL}/2.jpg)`}}>
+                <div className="service-overlay">
+                    <div className="service-icon-float"><Droplet size={18}/></div>
+                    <h4>Hidratação</h4>
+                </div>
             </div>
-            <div className="service-preview-card reveal-on-scroll delay-2" onClick={() => onNavigate('services')}>
-                <div className="service-preview-icon"><Sparkles /></div><h4>Higiene</h4>
+            <div className="service-img-card reveal-on-scroll delay-2" onClick={() => onNavigate('services')} style={{backgroundImage: `url(${BASE_STORAGE_URL}/4.jpg)`}}>
+                <div className="service-overlay">
+                    <div className="service-icon-float"><Sparkles size={18}/></div>
+                    <h4>Higiene</h4>
+                </div>
             </div>
-            <div className="service-preview-card reveal-on-scroll delay-3" onClick={() => onNavigate('about')}>
-                <div className="service-preview-icon"><Heart /></div><h4>Sobre Nós</h4>
+            <div className="service-img-card reveal-on-scroll delay-3" onClick={() => onNavigate('about')} style={{backgroundImage: `url(${BASE_STORAGE_URL}/5.jpg)`}}>
+                <div className="service-overlay">
+                    <div className="service-icon-float"><Heart size={18}/></div>
+                    <h4>Sobre Nós</h4>
+                </div>
             </div>
          </div>
          
-         {/* Green Area Content: Why Us */}
-         <div className="features-section">
+         {/* Features Section */}
+         <div className="features-section mt-4">
              <h2 className="section-title reveal-on-scroll">Por que a PetSpa?</h2>
              <div className="features-grid">
-                <div className="feature-item reveal-on-scroll">
+                <div className="feature-item feature-green reveal-on-scroll">
                     <div className="feature-icon"><Award /></div>
                     <h3>Profissionais Certificados</h3>
                     <p>Equipe treinada para lidar com todos os temperamentos.</p>
                 </div>
-                <div className="feature-item reveal-on-scroll delay-1">
+                <div className="feature-item feature-red reveal-on-scroll delay-1">
                     <div className="feature-icon"><ShieldCheck /></div>
                     <h3>Ambiente Seguro</h3>
                     <p>Monitoramento e higienização hospitalar constante.</p>
                 </div>
-                <div className="feature-item reveal-on-scroll delay-2">
+                <div className="feature-item feature-blue reveal-on-scroll delay-2">
                     <div className="feature-icon"><Heart /></div>
                     <h3>Amor em cada detalhe</h3>
                     <p>Produtos hipoalergênicos e tratamento VIP.</p>
@@ -77,11 +92,11 @@ export const HomePage: React.FC<HomePageProps> = ({ session, onNavigate, onOpenB
 
          {/* Promo Banner */}
          <div className="promo-banner mt-4 clickable-card reveal-on-scroll" onClick={() => session ? onOpenBooking() : onNavigate('login')}>
-            <div className="promo-content">
+            <div className="promo-content" style={{maxWidth: '65%'}}>
                 <h3>Primeira vez aqui? 🎁</h3>
                 <p>Ganhe <strong>10% OFF</strong> no primeiro banho agendando pelo app!</p>
             </div>
-            <div className="promo-decoration pulse-animation">🧼</div>
+            <img src={`${BASE_STORAGE_URL}/mst.png`} alt="Mascote" className="promo-mascot-img" />
          </div>
 
          {/* Testimonials */}
@@ -89,19 +104,34 @@ export const HomePage: React.FC<HomePageProps> = ({ session, onNavigate, onOpenB
             <h2 className="section-title">Quem ama, recomenda</h2>
             <div className="testimonials-scroll">
                 <div className="testimonial-card">
-                    <div className="stars">⭐⭐⭐⭐⭐</div>
+                    <div className="user-profile-row mb-2">
+                         <img src={getAvatarUrl("Ana P.")} className="avatar-xs" alt="Ana" />
+                         <div>
+                            <small className="block font-bold text-gray-800 leading-tight">Ana P.</small>
+                            <div className="stars text-xs">⭐⭐⭐⭐⭐</div>
+                         </div>
+                    </div>
                     <p>"A Mel nunca voltou tão cheirosa! O atendimento é impecável."</p>
-                    <small>— Ana P.</small>
                 </div>
                 <div className="testimonial-card">
-                    <div className="stars">⭐⭐⭐⭐⭐</div>
+                     <div className="user-profile-row mb-2">
+                         <img src={getAvatarUrl("Carlos M.")} className="avatar-xs" alt="Carlos" />
+                         <div>
+                            <small className="block font-bold text-gray-800 leading-tight">Carlos M.</small>
+                            <div className="stars text-xs">⭐⭐⭐⭐⭐</div>
+                         </div>
+                    </div>
                     <p>"Adoro a facilidade de agendar pelo app. Super prático!"</p>
-                    <small>— Carlos M.</small>
                 </div>
                 <div className="testimonial-card">
-                    <div className="stars">⭐⭐⭐⭐⭐</div>
+                     <div className="user-profile-row mb-2">
+                         <img src={getAvatarUrl("Julia S.")} className="avatar-xs" alt="Julia" />
+                         <div>
+                            <small className="block font-bold text-gray-800 leading-tight">Julia S.</small>
+                            <div className="stars text-xs">⭐⭐⭐⭐⭐</div>
+                         </div>
+                    </div>
                     <p>"Confio de olhos fechados. Trataram meu Thor como rei."</p>
-                    <small>— Julia S.</small>
                 </div>
             </div>
          </div>

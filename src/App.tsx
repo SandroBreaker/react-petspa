@@ -171,7 +171,7 @@ export default function App() {
             pets={pets}
             services={services}
             navigateTo={navigateTo}
-            onSuccess={() => loadUserData(session.user.id)}
+            onSuccess={async () => { await loadUserData(session.user.id); }}
          />
        )}
        
@@ -242,7 +242,7 @@ export default function App() {
                 onOpenBooking={() => setShowBookingModal(true)} 
             />
           )}
-          
+
           {view === 'services' && (
             <ServicesPage 
                 services={services} 

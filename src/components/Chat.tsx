@@ -1,8 +1,9 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { api } from '../services/api';
 import { geminiService } from '../services/gemini';
 import { Send, Sparkles, Bot, ChevronLeft, User, Loader2 } from 'lucide-react';
-import { formatCurrency } from '../utils/ui';
+import { formatCurrency, toLocalISOString } from '../utils/ui';
 
 interface ChatProps {
   onClose?: () => void;
@@ -350,7 +351,7 @@ export const Chat: React.FC<ChatProps> = ({ onNavigate }) => {
                value={inputValue} 
                onChange={e => setInputValue(e.target.value)}
                placeholder={inputType === 'datetime-local' ? '' : (mode === 'ai' ? 'Digite para a IA...' : 'Digite sua resposta...')}
-               min={inputType === 'datetime-local' ? new Date().toISOString().slice(0,16) : undefined}
+               min={inputType === 'datetime-local' ? toLocalISOString(new Date()) : undefined}
              />
              <button type="submit" className="chat-send-btn" disabled={!inputValue.trim()}>
                 <Send size={20} />

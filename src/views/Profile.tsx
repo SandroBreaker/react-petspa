@@ -3,6 +3,7 @@ import React from 'react';
 import { ChevronLeft, Plus } from 'lucide-react';
 import { Profile, Pet, Route } from '../types';
 import { useToast } from '../context/ToastContext';
+import { getAvatarUrl } from '../utils/ui';
 
 interface UserProfileProps {
     profile: Profile | null;
@@ -32,7 +33,13 @@ export const UserProfileView: React.FC<UserProfileProps> = ({
        </div>
 
        <div className="profile-header reveal-on-scroll">
-           <div className="profile-avatar">{profile?.full_name?.charAt(0)}</div>
+           <div className="profile-avatar">
+              <img 
+                src={getAvatarUrl(profile?.full_name || 'User')} 
+                alt="Avatar" 
+                style={{width:'100%', height:'100%', objectFit:'cover'}} 
+              />
+           </div>
            <div>
                <h2 style={{color:'white', marginBottom:4}}>{profile?.full_name}</h2>
                <p style={{color:'rgba(255,255,255,0.8)', margin:0}}>{session?.user.email}</p>

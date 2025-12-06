@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { Appointment, Pet, Profile, Route } from '../types';
+import { getAvatarUrl } from '../utils/ui';
 
 interface DashboardProps {
     profile: Profile | null;
@@ -28,7 +29,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
             <div className="card dashboard-header-card clickable-card reveal-on-scroll" onClick={() => onNavigate('user-profile')}>
                <div className="dashboard-welcome"><h3>Olá, {profile?.full_name?.split(' ')[0]}!</h3><p>Ver meu perfil</p></div>
                <div className="dashboard-icon">
-                  {profile?.full_name?.charAt(0) || '🐶'}
+                  <img 
+                    src={getAvatarUrl(profile?.full_name || 'User')} 
+                    alt="Avatar" 
+                    style={{width:'100%', height:'100%', objectFit:'cover', borderRadius:'50%'}} 
+                  />
                </div>
             </div>
             

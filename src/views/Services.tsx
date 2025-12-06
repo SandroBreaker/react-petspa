@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { ChevronLeft, Scissors } from 'lucide-react';
+import { ChevronLeft, Scissors, Droplet, Sparkles, Footprints, Heart, Stethoscope } from 'lucide-react';
 import { Service, Route } from '../types';
 import { formatCurrency } from '../utils/ui';
 
@@ -10,6 +10,16 @@ interface ServicesPageProps {
     onOpenBooking: () => void;
     session: any;
 }
+
+const getServiceIcon = (name: string) => {
+    const n = name.toLowerCase();
+    if (n.includes('banho')) return <Droplet size={32} />;
+    if (n.includes('tosa') || n.includes('corte')) return <Scissors size={32} />;
+    if (n.includes('hidrata') || n.includes('spa')) return <Sparkles size={32} />;
+    if (n.includes('unha') || n.includes('higiene') || n.includes('limpeza')) return <Footprints size={32} />;
+    if (n.includes('vacina') || n.includes('exame') || n.includes('consulta')) return <Stethoscope size={32} />;
+    return <Heart size={32} />;
+};
 
 export const ServicesPage: React.FC<ServicesPageProps> = ({ services, onNavigate, onOpenBooking, session }) => (
     <div className="container page-enter" style={{paddingTop:20}}>
@@ -21,7 +31,9 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({ services, onNavigate
         <div className="services-list-full">
             {services.map((s, idx) => (
                 <div key={s.id} className="card service-card-detailed reveal-on-scroll" style={{ transitionDelay: `${idx * 0.1}s` }}>
-                    <div className="service-icon-large"><Scissors /></div>
+                    <div className="service-icon-large">
+                        {getServiceIcon(s.name)}
+                    </div>
                     <div className="service-info-full">
                         <h3>{s.name}</h3>
                         <p>{s.description || 'Procedimento realizado por profissionais qualificados com produtos premium.'}</p>

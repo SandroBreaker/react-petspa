@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { X } from 'lucide-react';
 import { api } from '../services/api';
-import { formatCurrency } from '../utils/ui';
+import { formatCurrency, toLocalISOString } from '../utils/ui';
 import { useToast } from '../context/ToastContext';
 import { Pet, Service } from '../types';
 
@@ -116,7 +116,13 @@ export const BookingWizard: React.FC<BookingWizardProps> = ({
                             <h4 className="text-center mb-4">Quando?</h4>
                             <div className="form-group">
                                 <label>Data e Hora</label>
-                                <input type="datetime-local" className="input-lg" value={wizDate} onChange={e => setWizDate(e.target.value)} min={new Date().toISOString().slice(0,16)}/>
+                                <input 
+                                    type="datetime-local" 
+                                    className="input-lg" 
+                                    value={wizDate} 
+                                    onChange={e => setWizDate(e.target.value)} 
+                                    min={toLocalISOString(new Date())}
+                                />
                             </div>
                             
                             {wizPet && wizService && wizDate && (

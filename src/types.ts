@@ -39,10 +39,10 @@ export interface Appointment {
   start_time: string;
   end_time: string;
   status: AppointmentStatus;
-  // Joins
-  pets?: Pet;
-  services?: Service;
-  profiles?: Profile; // Client profile
+  // Joins - Alterado para Partial para suportar selects parciais do Supabase
+  pets?: Partial<Pet>;
+  services?: Partial<Service>;
+  profiles?: Partial<Profile>; // Client profile
 }
 
 export interface Product {
@@ -64,6 +64,6 @@ export interface Employee {
 }
 
 // UI Types
-export type Route = 'home' | 'services' | 'about' | 'chat' | 'login' | 'register' | 'dashboard' | 'profile' | 'admin' | 'tracker' | 'user-profile' | 'pet-details' | 'appointment-details' | 'booking-wizard';
+export type Route = 'home' | 'services' | 'about' | 'chat' | 'login' | 'register' | 'dashboard' | 'profile' | 'admin' | 'tracker' | 'user-profile' | 'pet-details' | 'appointment-details' | 'booking-wizard' | 'market';
 
 export type LoginStage = 'idle' | 'authenticating' | 'welcome' | 'insight';
