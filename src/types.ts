@@ -1,4 +1,3 @@
-
 export type UserRole = 'client' | 'admin' | 'employee';
 
 export interface Profile {
@@ -24,8 +23,6 @@ export interface Pet {
   name: string;
   breed?: string;
   weight?: number;
-  size_category?: 'small' | 'medium' | 'large';
-  photo_url?: string;
   notes?: string;
 }
 
@@ -41,9 +38,10 @@ export interface Appointment {
   start_time: string;
   end_time: string;
   status: AppointmentStatus;
+  // Joins
   pets?: Pet;
   services?: Service;
-  profiles?: Profile;
+  profiles?: Profile; // Client profile
 }
 
 export interface Product {

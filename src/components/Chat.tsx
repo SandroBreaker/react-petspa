@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { api } from '../services/api';
 import { geminiService } from '../services/gemini';
-import { Send, Sparkles, Bot, ChevronLeft, User } from 'lucide-react';
+import { Send, Sparkles, Bot, ChevronLeft, User, Loader2 } from 'lucide-react';
+import { formatCurrency } from '../utils/ui';
 
 interface ChatProps {
   onClose?: () => void;
@@ -18,6 +19,7 @@ interface Message {
 export const Chat: React.FC<ChatProps> = ({ onNavigate }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isTyping, setIsTyping] = useState(false);
+  const [isProcessingAction, setIsProcessingAction] = useState(false); // Novo estado para overlay
   const [flowContext, setFlowContext] = useState<any>({});
   
   // Controle de Modo: 'flow' (Botões/Script) ou 'ai' (Conversa Livre)
@@ -54,8 +56,12 @@ export const Chat: React.FC<ChatProps> = ({ onNavigate }) => {
   const processNode = async (nodeId: string) => {
     setIsTyping(true);
     setMode('flow');
-    await new Promise(r => setTimeout(r, 600)); // Simulando "thinking"
+    
+    // Delay natural de "pensando"
+    await new Promise(r => setTimeout(r, 800)); 
+    
     setIsTyping(false);
+    setIsProcessingAction(false); // Libera o overlay
 
     let node: any = {};
 
@@ -88,7 +94,7 @@ export const Chat: React.FC<ChatProps> = ({ onNavigate }) => {
               options: pets.map(p => ({
                 label: p.name,
                 action: 'setFlowData',
-                payload: { key: 'petId', value: p.id },
+                payload: { petId: p.id, petName: p.name },
                 nextNode: 'FLOW_SCHEDULE_SERVICE'
               }))
             };
@@ -97,20 +103,32 @@ export const Chat: React.FC<ChatProps> = ({ onNavigate }) => {
         break;
 
       case 'FLOW_SCHEDULE_SERVICE':
+        setInputType(null);
         const services = await api.booking.getServices();
         node = {
           message: 'Qual serviço você gostaria?',
           options: services.map(s => ({
-            label: `${s.name} (R$ ${s.price})`,
+            label: `${s.name} (${formatCurrency(s.price)})`,
             action: 'setFlowData',
-            payload: { key: 'serviceId', value: s.id, extraKey: 'serviceDuration', extraValue: s.duration_minutes },
+            payload: { 
+              serviceId: s.id, 
+              serviceName: s.name, 
+              servicePrice: s.price, 
+              serviceDuration: s.duration_minutes 
+            },
             nextNode: 'FLOW_SCHEDULE_DATE'
           }))
         };
         break;
 
       case 'FLOW_SCHEDULE_DATE':
-        node = { message: 'Por favor, selecione a data e o horário:' };
+        const { petName, serviceName, servicePrice, serviceDuration } = flowContext;
+        node = { 
+          message: `Ótima escolha! 🛁\n\nServiço: **${serviceName}**\nPet: **${petName}**\nDuração: ~${serviceDuration} min\nValor: **${formatCurrency(servicePrice)}**\n\nQual a melhor data e horário para você?`,
+          options: [
+             { label: '⬅️ Escolher outro serviço', nextNode: 'FLOW_SCHEDULE_SERVICE' }
+          ]
+        };
         setInputType('datetime-local');
         setInputHandler(() => async (val: string) => {
           setFlowContext((prev: any) => ({ ...prev, appointmentTime: val }));
@@ -120,11 +138,11 @@ export const Chat: React.FC<ChatProps> = ({ onNavigate }) => {
 
       case 'FLOW_SCHEDULE_CONFIRM':
         setInputType(null);
-        const dateStr = new Date(flowContext.appointmentTime).toLocaleString('pt-BR');
+        const dateStr = new Date(flowContext.appointmentTime).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
         node = {
-          message: `Confirmando: Banho dia ${dateStr}. Posso agendar?`,
+          message: `Confirma o agendamento de **${flowContext.serviceName}** para **${flowContext.petName}** no dia **${dateStr}**?`,
           options: [
-            { label: '✅ Confirmar Agendamento', action: 'finalizeSchedule', nextNode: 'END_SUCCESS' },
+            { label: '✅ Sim, Confirmar', action: 'finalizeSchedule', nextNode: 'END_SUCCESS' },
             { label: '❌ Cancelar', nextNode: 'START' }
           ]
         };
@@ -169,11 +187,16 @@ export const Chat: React.FC<ChatProps> = ({ onNavigate }) => {
   };
 
   const handleOption = async (opt: any) => {
+    setIsProcessingAction(true); // Ativa overlay de processamento
     addMessage(opt.label, 'user');
     
+    // Pequena pausa para sensação de processamento do clique
+    await new Promise(r => setTimeout(r, 400));
+
     // Actions Específicas
     if (opt.action === 'startAiChat') {
         setMode('ai');
+        setIsProcessingAction(false);
         addMessage('Modo IA ativado! 🧠\nPergunte sobre raças, dicas de saúde ou cuidados.', 'bot', [{label: 'Encerrar IA', nextNode: 'START'}]);
         return;
     }
@@ -181,8 +204,7 @@ export const Chat: React.FC<ChatProps> = ({ onNavigate }) => {
     if (opt.action === 'setFlowData') {
       setFlowContext((prev: any) => ({
         ...prev,
-        [opt.payload.key]: opt.payload.value,
-        ...(opt.payload.extraKey ? { [opt.payload.extraKey]: opt.payload.extraValue } : {})
+        ...opt.payload // Spread direto do payload (suporta multiplas chaves)
       }));
     }
 
@@ -201,6 +223,7 @@ export const Chat: React.FC<ChatProps> = ({ onNavigate }) => {
     if (opt.action === 'navProfile') onNavigate('user-profile');
 
     if (opt.nextNode) processNode(opt.nextNode);
+    else setIsProcessingAction(false); // Se não tiver nextNode, libera
   };
 
   const handleInputSubmit = async (e: React.FormEvent) => {
@@ -211,6 +234,7 @@ export const Chat: React.FC<ChatProps> = ({ onNavigate }) => {
     addMessage(userText, 'user');
     const rawVal = inputValue;
     setInputValue('');
+    setIsProcessingAction(true);
 
     // 1. Fluxo de Input Específico
     if (inputHandler) {
@@ -222,6 +246,7 @@ export const Chat: React.FC<ChatProps> = ({ onNavigate }) => {
 
     // 2. Chat Inteligente (Gemini)
     setIsTyping(true);
+    setIsProcessingAction(false); // Libera overlay para mostrar typing
     const history = messages.slice(-6).map(m => ({
         role: m.sender === 'user' ? 'user' : 'model',
         parts: [{ text: m.text }]
@@ -239,6 +264,14 @@ export const Chat: React.FC<ChatProps> = ({ onNavigate }) => {
 
   return (
     <div className="chat-layout">
+      {/* Overlay de Processamento */}
+      {isProcessingAction && (
+        <div className="chat-processing-overlay fade-in">
+          <Loader2 className="spinner" size={48} color="white" />
+          <p>Processando...</p>
+        </div>
+      )}
+
       {/* Header Fixo */}
       <div className="chat-header-modern">
         <button onClick={() => onNavigate('home')} className="btn-icon-sm btn-ghost-white">
@@ -278,9 +311,9 @@ export const Chat: React.FC<ChatProps> = ({ onNavigate }) => {
                 </div>
 
                 {msg.sender === 'bot' && msg.options && msg.options.length > 0 && (
-                  <div className="chat-options-grid fade-in-slide">
+                  <div className="chat-options-grid fade-in-slide delay-options">
                     {msg.options.map((opt, idx) => (
-                      <button key={idx} className="chat-chip-btn" onClick={() => handleOption(opt)}>
+                      <button key={idx} className="chat-chip-btn" onClick={() => handleOption(opt)} disabled={isProcessingAction}>
                         {opt.label}
                       </button>
                     ))}
