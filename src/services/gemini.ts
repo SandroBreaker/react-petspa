@@ -1,4 +1,3 @@
-
 import { GoogleGenAI } from "@google/genai";
 
 const SYSTEM_INSTRUCTION = `
@@ -23,44 +22,23 @@ const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 export const geminiService = {
   async sendMessage(history: { role: 'user' | 'model', parts: [{ text: string }] }[], message: string) {
     try {
+      // Usamos o modelo flash para respostas rápidas em chat
       const model = 'gemini-2.5-flash';
+      
       const chat = ai.chats.create({
         model: model,
         config: {
           systemInstruction: SYSTEM_INSTRUCTION,
-          temperature: 0.7,
+          temperature: 0.7, // Criatividade balanceada
         },
         history: history
       });
+
       const result = await chat.sendMessage({ message });
       return result.text;
     } catch (error) {
       console.error("Erro ao chamar Gemini:", error);
       return "Desculpe, meu cérebro de IA está um pouco confuso agora 🤯. Tente novamente mais tarde.";
-    }
-  },
-
-  async generateMascotPhrase(userName: string, petNames: string[] = []) {
-    try {
-      const model = 'gemini-2.5-flash';
-      const petsContext = petNames.length > 0 
-        ? `O usuário tem os pets: ${petNames.join(', ')}.` 
-        : 'O usuário ainda não cadastrou pets.';
-
-      const prompt = `
-        Crie uma frase CURTA (máximo 10 palavras), criativa e fofa como se fosse um mascote de cachorro falando.
-        Objetivo: Convencer o usuário (${userName}) a agendar um banho ou comprar um brinquedo.
-        Contexto: ${petsContext}
-        Use 1 emoji. Não use aspas.
-      `;
-
-      const response = await ai.models.generateContent({
-        model,
-        contents: prompt,
-      });
-      return response.text.trim();
-    } catch (error) {
-      return "Vamos deixar seu pet feliz hoje? 🐾"; // Fallback
     }
   }
 };
