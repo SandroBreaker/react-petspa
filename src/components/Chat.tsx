@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { api } from '../services/api';
-import { geminiService } from '../services/gemini.ts';
+import { geminiService } from '../services/gemini';
 import { Send, Sparkles, Bot, ChevronLeft, User } from 'lucide-react';
 
 interface ChatProps {
