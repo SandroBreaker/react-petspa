@@ -4,15 +4,15 @@ import { supabase } from './lib/supabase';
 import { api } from './services/api';
 import { Profile, Appointment, Pet, Service } from './types';
 import { Chat } from './components/Chat';
-import { Marketplace } from './components/Marketplace';
+import { AboutUs } from './components/AboutUs';
 import { AdminPanel } from './components/Admin';
 import { Logo } from './components/Logo';
 import { useToast } from './context/ToastContext';
-import { Home, Sparkles, ShoppingBag, MessageCircle, Calendar, User, Menu, X, LogOut, Scissors, Droplet, Heart, CheckCircle, Clock, MapPin, Phone, Shield, ChevronLeft, CalendarDays, DollarSign, Plus, Star, Award, ShieldCheck } from 'lucide-react';
+import { Home, Sparkles, ShoppingBag, MessageCircle, Calendar, User, Menu, X, LogOut, Scissors, Droplet, Heart, CheckCircle, Clock, MapPin, Phone, Shield, ChevronLeft, CalendarDays, DollarSign, Plus, Star, Award, ShieldCheck, Users } from 'lucide-react';
 import { formatCurrency, formatDate } from './utils/ui';
 
 // --- Routing ---
-type Route = 'home' | 'services' | 'marketplace' | 'chat' | 'login' | 'register' | 'dashboard' | 'profile' | 'admin' | 'tracker' | 'user-profile' | 'pet-details' | 'appointment-details' | 'booking-wizard';
+type Route = 'home' | 'services' | 'about' | 'chat' | 'login' | 'register' | 'dashboard' | 'profile' | 'admin' | 'tracker' | 'user-profile' | 'pet-details' | 'appointment-details' | 'booking-wizard';
 
 export default function App() {
   const [view, setView] = useState<Route>('home');
@@ -100,9 +100,6 @@ export default function App() {
               </div>
               <img 
                   src="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExM3Z5a2Z5a2Z5a2Z5a2Z5a2Z5a2Z5/26u4lODA9qiLErD4A/giphy.gif" 
-                  // Fallback ou URL de um cachorro 3D fofo com fundo transparente
-                  // Usando um placeholder transparente de alta qualidade se o link quebrar, 
-                  // mas idealmente seria um GIF hospedado localmente.
                   onError={(e) => {
                       (e.target as HTMLImageElement).src = "https://cdn3d.iconscout.com/3d/premium/thumb/dog-5466380-4592070.png";
                   }}
@@ -266,8 +263,8 @@ export default function App() {
             <div className="service-preview-card" onClick={() => navigateTo('services')}>
                 <div className="service-preview-icon"><Sparkles /></div><h4>Higiene</h4>
             </div>
-            <div className="service-preview-card" onClick={() => navigateTo('marketplace')}>
-                <div className="service-preview-icon"><ShoppingBag /></div><h4>Boutique</h4>
+            <div className="service-preview-card" onClick={() => navigateTo('about')}>
+                <div className="service-preview-icon"><Heart /></div><h4>Sobre Nós</h4>
             </div>
          </div>
          
@@ -667,7 +664,7 @@ export default function App() {
           <nav className="nav-links-desktop">
              <a href="#" className={`nav-link-item ${view === 'home' && 'active'}`} onClick={() => navigateTo('home')}>Início</a>
              <a href="#" className={`nav-link-item ${view === 'services' && 'active'}`} onClick={() => navigateTo('services')}>Serviços</a>
-             <a href="#" className={`nav-link-item ${view === 'marketplace' && 'active'}`} onClick={() => navigateTo('marketplace')}>Loja</a>
+             <a href="#" className={`nav-link-item ${view === 'about' && 'active'}`} onClick={() => navigateTo('about')}>Sobre Nós</a>
              <a href="#" className={`nav-link-item nav-link-cta ${view === 'chat' && 'active'}`} onClick={() => navigateTo('chat')}>Assistente IA</a>
              {session ? (
                <>
@@ -686,7 +683,7 @@ export default function App() {
           {view === 'services' && <ServicesPage />}
           {view === 'login' && <LoginPage />}
           {view === 'chat' && <Chat onNavigate={(r) => navigateTo(r as Route)} />}
-          {view === 'marketplace' && <Marketplace />}
+          {view === 'about' && <AboutUs />}
           {view === 'dashboard' && <Dashboard />}
           {view === 'admin' && <AdminPanel />}
           {view === 'user-profile' && <UserProfileView />}
@@ -697,7 +694,7 @@ export default function App() {
        {/* Mobile Nav */}
        <nav className="mobile-nav">
           <a href="#" className={`nav-item ${view === 'home' ? 'active' : ''}`} onClick={() => navigateTo('home')}><span className="icon"><Home /></span></a>
-          <a href="#" className={`nav-item ${view === 'marketplace' ? 'active' : ''}`} onClick={() => navigateTo('marketplace')}><span className="icon"><ShoppingBag /></span></a>
+          <a href="#" className={`nav-item ${view === 'about' ? 'active' : ''}`} onClick={() => navigateTo('about')}><span className="icon"><Users /></span></a>
           
           {/* Central Action Button */}
           <div className="nav-item-fab" onClick={() => session ? setShowBookingModal(true) : navigateTo('login')}>
