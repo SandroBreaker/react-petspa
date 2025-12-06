@@ -22,6 +22,12 @@ import { Dashboard } from './views/Dashboard';
 import { UserProfileView } from './views/Profile';
 import { PetDetailsView, AppointmentDetailsView } from './views/Details';
 
+// Credenciais de Desenvolvimento
+const DEV_USER = {
+    email: 'ale.gomessilva97@gmail.com',
+    pass: 'Tobi@1313'
+};
+
 // Dicionário de comentários do Mascote por rota
 const MASCOT_COMMENTS: Partial<Record<Route, string[]>> = {
     'home': ['Pronto para um dia de spa? 🛁', 'Seu pet merece o melhor!', 'Toque em Agendar para começar!'],
@@ -76,15 +82,42 @@ export default function App() {
     return () => observer.disconnect();
   }, [view, pets, apps, loginStage]);
 
-  // Initial Load
+  // Initial Load & Auto Login Logic
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      if (session) {
-          loadProfile(session.user.id);
-          loadUserData(session.user.id);
-      }
-    });
+    const initApp = async () => {
+        const { data: { session: existingSession } } = await supabase.auth.getSession();
+        
+        if (existingSession) {
+            setSession(existingSession);
+            loadProfile(existingSession.user.id);
+            loadUserData(existingSession.user.id);
+        } else {
+            // AUTO LOGIN FOR DEV
+            console.log("Iniciando auto-login de desenvolvimento...");
+            setLoginStage('authenticating');
+            try {
+                const { data, error } = await api.auth.signIn(DEV_USER.email, DEV_USER.pass);
+                if (!error && data.session) {
+                    // Sucesso no auto login
+                    setSession(data.session);
+                    setLoginStage('welcome');
+                    
+                    // Mensagem do Mascote sobre o Auto Login
+                    setTimeout(() => {
+                        setMascotMessage("Au au! 🐶 Fiz o login automático para agilizar seus testes. O cadastro real já funciona perfeitamente!");
+                        setShowMascotBubble(true);
+                        // Esconde o balão após 8 segundos para dar tempo de ler
+                        setTimeout(() => setShowMascotBubble(false), 8000);
+                    }, 1000);
+                }
+            } catch (e) {
+                console.error("Falha no auto-login", e);
+                setLoginStage('idle');
+            }
+        }
+    };
+
+    initApp();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
@@ -96,7 +129,6 @@ export default function App() {
       } else { 
           setProfile(null); 
           setPets([]); setApps([]); 
-          // Não forçar redirect se estiver em register ou login para evitar UX ruim
           if (view !== 'register' && view !== 'login') setView('home'); 
       }
     });
@@ -109,6 +141,9 @@ export default function App() {
 
       const comments = MASCOT_COMMENTS[view];
       if (comments && comments.length > 0) {
+          // Pequena chance de não mostrar nada para não ser irritante
+          if (Math.random() > 0.7) return;
+
           const randomComment = comments[Math.floor(Math.random() * comments.length)];
           setMascotMessage(randomComment);
           setShowMascotBubble(true);
