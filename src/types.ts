@@ -1,3 +1,4 @@
+
 export type UserRole = 'client' | 'admin' | 'employee';
 
 export interface Profile {
@@ -61,3 +62,8 @@ export interface Employee {
   active: boolean;
   profiles?: Profile;
 }
+
+// UI Types
+export type Route = 'home' | 'services' | 'about' | 'chat' | 'login' | 'register' | 'dashboard' | 'profile' | 'admin' | 'tracker' | 'user-profile' | 'pet-details' | 'appointment-details' | 'booking-wizard';
+
+export type LoginStage = 'idle' | 'authenticating' | 'welcome' | 'insight';
