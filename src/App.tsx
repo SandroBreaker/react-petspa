@@ -8,7 +8,7 @@ import { AboutUs } from './components/AboutUs';
 import { AdminPanel } from './components/Admin';
 import { Logo } from './components/Logo';
 import { useToast } from './context/ToastContext';
-import { Home, Sparkles, ShoppingBag, MessageCircle, Calendar, User, Menu, X, LogOut, Scissors, Droplet, Heart, CheckCircle, Clock, MapPin, Phone, Shield, ChevronLeft, CalendarDays, DollarSign, Plus, Star, Award, ShieldCheck, Users } from 'lucide-react';
+import { Home, Sparkles, ShoppingBag, MessageCircle, Calendar, User, Menu, X, LogOut, Scissors, Droplet, Heart, CheckCircle, Clock, MapPin, Phone, Shield, ChevronLeft, CalendarDays, DollarSign, Plus, Star, Award, ShieldCheck, Users, Dog } from 'lucide-react';
 import { formatCurrency, formatDate } from './utils/ui';
 
 // URL base do Bucket
@@ -118,15 +118,12 @@ export default function App() {
               <div className="speech-bubble" onClick={() => session ? setShowBookingModal(true) : navigateTo('login')}>
                   Vamos agendar? 🛁
               </div>
-              <img 
-                  src="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExM3Z5a2Z5a2Z5a2Z5a2Z5a2Z5a2Z5/26u4lODA9qiLErD4A/giphy.gif" 
-                  onError={(e) => {
-                      (e.target as HTMLImageElement).src = "https://cdn3d.iconscout.com/3d/premium/thumb/dog-5466380-4592070.png";
-                  }}
-                  className="mascot-gif"
-                  alt="Mascote PetSpa"
+              <div 
+                  className="mascot-icon-wrapper"
                   onClick={() => session ? setShowBookingModal(true) : navigateTo('login')}
-              />
+              >
+                  <Dog size={32} strokeWidth={2.5} />
+              </div>
           </div>
       );
   };
