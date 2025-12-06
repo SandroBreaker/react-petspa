@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from './lib/supabase';
 import { api } from './services/api';
 import { Profile, Appointment, Pet, Service } from './types';
@@ -10,6 +10,9 @@ import { Logo } from './components/Logo';
 import { useToast } from './context/ToastContext';
 import { Home, Sparkles, ShoppingBag, MessageCircle, Calendar, User, Menu, X, LogOut, Scissors, Droplet, Heart, CheckCircle, Clock, MapPin, Phone, Shield, ChevronLeft, CalendarDays, DollarSign, Plus, Star, Award, ShieldCheck, Users } from 'lucide-react';
 import { formatCurrency, formatDate } from './utils/ui';
+
+// URL base do Bucket
+const BASE_STORAGE_URL = 'https://qvkfoitbatyrwqbicwwc.supabase.co/storage/v1/object/public/site-assets'; 
 
 // --- Routing ---
 type Route = 'home' | 'services' | 'about' | 'chat' | 'login' | 'register' | 'dashboard' | 'profile' | 'admin' | 'tracker' | 'user-profile' | 'pet-details' | 'appointment-details' | 'booking-wizard';
@@ -32,6 +35,22 @@ export default function App() {
 
   // Booking Modal State
   const [showBookingModal, setShowBookingModal] = useState(false);
+
+  // Scroll Observer para Animações
+  useEffect(() => {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+        }
+      });
+    }, { threshold: 0.1 });
+
+    const elements = document.querySelectorAll('.reveal-on-scroll');
+    elements.forEach(el => observer.observe(el));
+
+    return () => observer.disconnect();
+  }, [view, pets, apps]); // Re-executa quando a view ou dados mudam
 
   // Initial Load
   useEffect(() => {
@@ -84,6 +103,7 @@ export default function App() {
   };
 
   const navigateTo = (v: Route) => {
+      // Pequeno delay ou lógica de transição pode ser adicionada aqui se necessário
       setView(v);
       window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -136,7 +156,7 @@ export default function App() {
       };
 
       return (
-          <div className="modal-overlay fade-in">
+          <div className="modal-overlay">
               <div className="modal-content">
                   <div className="modal-header">
                       <h3>Agendar Banho & Tosa</h3>
@@ -151,9 +171,9 @@ export default function App() {
                       <div className={`wizard-step-dot ${step >= 3 ? 'active' : ''}`}>3</div>
                   </div>
 
-                  <div className="wizard-body">
+                  <div className="wizard-body page-enter">
                       {step === 1 && (
-                          <div className="fade-in">
+                          <div className="fade-in-up">
                               <h4 className="text-center mb-4">Quem vai receber cuidados hoje?</h4>
                               {pets.length === 0 ? (
                                   <div className="empty-state">
@@ -177,7 +197,7 @@ export default function App() {
                       )}
 
                       {step === 2 && (
-                          <div className="fade-in">
+                          <div className="fade-in-up">
                               <h4 className="text-center mb-4">Qual serviço?</h4>
                               <div className="services-list-wizard">
                                   {services.map(s => (
@@ -200,7 +220,7 @@ export default function App() {
                       )}
 
                       {step === 3 && (
-                          <div className="fade-in">
+                          <div className="fade-in-up">
                               <h4 className="text-center mb-4">Quando?</h4>
                               <div className="form-group">
                                   <label>Data e Hora</label>
@@ -235,12 +255,19 @@ export default function App() {
   };
   
   const HomePage = () => (
-    <>
-      <header className="hero-header">
+    <div className="page-enter">
+      <header 
+        className="hero-header reveal-on-scroll"
+        style={{ 
+            backgroundImage: `linear-gradient(to bottom, rgba(255,140,66,0.8), rgba(255,140,66,0.4)), url(${BASE_STORAGE_URL}/bg.jpg)`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center'
+        }}
+      >
         <div className="hero-content">
-          <h1>Seu pet limpo,<br />feliz e saudável!</h1>
-          <p>Confiança, carinho e tecnologia. Agendamento inteligente com IA.</p>
-          <div className="hero-actions">
+          <h1 className="fade-in-up">Seu pet limpo,<br />feliz e saudável!</h1>
+          <p className="fade-in-up delay-1">Confiança, carinho e tecnologia. Agendamento inteligente com IA.</p>
+          <div className="hero-actions fade-in-up delay-2">
             <button className="btn btn-primary hero-btn" onClick={() => session ? setShowBookingModal(true) : navigateTo('login')}>
                 Agendar Agora
             </button>
@@ -252,37 +279,37 @@ export default function App() {
       </header>
       
       <div className="container">
-         <h2 className="section-title">Nossos Serviços</h2>
+         <h2 className="section-title reveal-on-scroll">Nossos Serviços</h2>
          <div className="services-preview-grid">
-            <div className="service-preview-card" onClick={() => navigateTo('services')}>
+            <div className="service-preview-card reveal-on-scroll" onClick={() => navigateTo('services')}>
                 <div className="service-preview-icon"><Scissors /></div><h4>Banho & Tosa</h4>
             </div>
-            <div className="service-preview-card" onClick={() => navigateTo('services')}>
+            <div className="service-preview-card reveal-on-scroll delay-1" onClick={() => navigateTo('services')}>
                 <div className="service-preview-icon"><Droplet /></div><h4>Hidratação</h4>
             </div>
-            <div className="service-preview-card" onClick={() => navigateTo('services')}>
+            <div className="service-preview-card reveal-on-scroll delay-2" onClick={() => navigateTo('services')}>
                 <div className="service-preview-icon"><Sparkles /></div><h4>Higiene</h4>
             </div>
-            <div className="service-preview-card" onClick={() => navigateTo('about')}>
+            <div className="service-preview-card reveal-on-scroll delay-3" onClick={() => navigateTo('about')}>
                 <div className="service-preview-icon"><Heart /></div><h4>Sobre Nós</h4>
             </div>
          </div>
          
          {/* Green Area Content: Why Us */}
          <div className="features-section">
-             <h2 className="section-title">Por que a PetSpa?</h2>
+             <h2 className="section-title reveal-on-scroll">Por que a PetSpa?</h2>
              <div className="features-grid">
-                <div className="feature-item">
+                <div className="feature-item reveal-on-scroll">
                     <div className="feature-icon"><Award /></div>
                     <h3>Profissionais Certificados</h3>
                     <p>Equipe treinada para lidar com todos os temperamentos.</p>
                 </div>
-                <div className="feature-item">
+                <div className="feature-item reveal-on-scroll delay-1">
                     <div className="feature-icon"><ShieldCheck /></div>
                     <h3>Ambiente Seguro</h3>
                     <p>Monitoramento e higienização hospitalar constante.</p>
                 </div>
-                <div className="feature-item">
+                <div className="feature-item reveal-on-scroll delay-2">
                     <div className="feature-icon"><Heart /></div>
                     <h3>Amor em cada detalhe</h3>
                     <p>Produtos hipoalergênicos e tratamento VIP.</p>
@@ -291,16 +318,16 @@ export default function App() {
          </div>
 
          {/* Promo Banner */}
-         <div className="promo-banner mt-4 clickable-card" onClick={() => session ? setShowBookingModal(true) : navigateTo('login')}>
+         <div className="promo-banner mt-4 clickable-card reveal-on-scroll" onClick={() => session ? setShowBookingModal(true) : navigateTo('login')}>
             <div className="promo-content">
                 <h3>Primeira vez aqui? 🎁</h3>
                 <p>Ganhe <strong>10% OFF</strong> no primeiro banho agendando pelo app!</p>
             </div>
-            <div className="promo-decoration">🧼</div>
+            <div className="promo-decoration pulse-animation">🧼</div>
          </div>
 
          {/* Testimonials */}
-         <div className="testimonials-section mt-4">
+         <div className="testimonials-section mt-4 reveal-on-scroll">
             <h2 className="section-title">Quem ama, recomenda</h2>
             <div className="testimonials-scroll">
                 <div className="testimonial-card">
@@ -321,19 +348,19 @@ export default function App() {
             </div>
          </div>
       </div>
-    </>
+    </div>
   );
 
   const ServicesPage = () => (
-      <div className="container fade-in" style={{paddingTop:20}}>
+      <div className="container page-enter" style={{paddingTop:20}}>
           <div className="nav-header">
                <button className="btn-icon-sm" onClick={() => navigateTo('home')}><ChevronLeft /></button>
                <h3>Nossos Serviços</h3>
                <div style={{width: 44}}></div>
           </div>
           <div className="services-list-full">
-              {services.map(s => (
-                  <div key={s.id} className="card service-card-detailed">
+              {services.map((s, idx) => (
+                  <div key={s.id} className="card service-card-detailed reveal-on-scroll" style={{ transitionDelay: `${idx * 0.1}s` }}>
                       <div className="service-icon-large"><Scissors /></div>
                       <div className="service-info-full">
                           <h3>{s.name}</h3>
@@ -372,8 +399,8 @@ export default function App() {
        }
     };
     return (
-      <div className="container auth-container" style={{display:'flex', alignItems:'center', justifyContent:'center', minHeight:'calc(100vh - 100px)'}}>
-        <div className="card auth-card fade-in" style={{width:'100%', maxWidth:400, textAlign:'center'}}>
+      <div className="container auth-container page-enter" style={{display:'flex', alignItems:'center', justifyContent:'center', minHeight:'calc(100vh - 100px)'}}>
+        <div className="card auth-card reveal-on-scroll" style={{width:'100%', maxWidth:400, textAlign:'center'}}>
           <div style={{display:'flex', justifyContent:'center', marginBottom:20}}>
             <Logo height={60} />
           </div>
@@ -392,14 +419,14 @@ export default function App() {
   };
 
   const UserProfileView = () => (
-    <div className="container fade-in" style={{ paddingTop: 20 }}>
+    <div className="container page-enter" style={{ paddingTop: 20 }}>
        <div className="nav-header">
            <button className="btn-icon-sm" onClick={() => navigateTo('dashboard')}><ChevronLeft /></button>
            <h3>Meu Perfil</h3>
            <div style={{width: 44}}></div>
        </div>
 
-       <div className="profile-header">
+       <div className="profile-header reveal-on-scroll">
            <div className="profile-avatar">{profile?.full_name?.charAt(0)}</div>
            <div>
                <h2 style={{color:'white', marginBottom:4}}>{profile?.full_name}</h2>
@@ -410,7 +437,7 @@ export default function App() {
            </div>
        </div>
 
-       <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16}}>
+       <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16}} className="reveal-on-scroll">
             <h3>Meus Pets</h3>
             <button className="btn-icon-sm" style={{width:32, height:32}} onClick={() => toast.info('Funcionalidade de cadastro em desenvolvimento 🏗️')}><Plus size={16}/></button>
        </div>
@@ -418,7 +445,7 @@ export default function App() {
        {pets.length === 0 ? <p>Nenhum pet cadastrado.</p> : (
          <div className="pet-grid">
            {pets.map(p => (
-              <div key={p.id} className="card pet-card clickable-card" onClick={() => { setSelectedPet(p); navigateTo('pet-details'); }}>
+              <div key={p.id} className="card pet-card clickable-card reveal-on-scroll" onClick={() => { setSelectedPet(p); navigateTo('pet-details'); }}>
                  <div className="pet-icon">🐾</div>
                  <strong>{p.name}</strong>
                  <span className="pet-breed">{p.breed || 'SRD'}</span>
@@ -427,7 +454,7 @@ export default function App() {
          </div>
        )}
        
-       <div className="card" style={{marginTop: 24}}>
+       <div className="card reveal-on-scroll" style={{marginTop: 24}}>
           <h3 style={{marginBottom:16}}>Estatísticas</h3>
           <div className="stat-grid">
               <div className="stat-card">
@@ -448,14 +475,14 @@ export default function App() {
      const petHistory = apps.filter(a => a.pet_id === selectedPet.id);
 
      return (
-        <div className="container fade-in" style={{ paddingTop: 20 }}>
+        <div className="container page-enter" style={{ paddingTop: 20 }}>
            <div className="nav-header">
                <button className="btn-icon-sm" onClick={() => navigateTo('user-profile')}><ChevronLeft /></button>
                <h3>Detalhes do Pet</h3>
                <div style={{width: 44}}></div>
            </div>
 
-           <div className="card" style={{textAlign:'center', padding: '40px 20px'}}>
+           <div className="card reveal-on-scroll" style={{textAlign:'center', padding: '40px 20px'}}>
                <div className="pet-icon" style={{width: 80, height: 80, fontSize: '2.5rem', margin: '0 auto 16px'}}>🐾</div>
                <h2>{selectedPet.name}</h2>
                <p>{selectedPet.breed || 'Sem raça definida'}</p>
@@ -470,8 +497,8 @@ export default function App() {
                )}
            </div>
 
-           <h3 style={{margin: '24px 0 16px'}}>Histórico de {selectedPet.name}</h3>
-           <div className="card" style={{padding: 0, overflow:'hidden'}}>
+           <h3 style={{margin: '24px 0 16px'}} className="reveal-on-scroll">Histórico de {selectedPet.name}</h3>
+           <div className="card reveal-on-scroll" style={{padding: 0, overflow:'hidden'}}>
                {petHistory.length === 0 ? (
                    <div style={{padding:24, textAlign:'center', color:'#999'}}>Nenhum banho registrado ainda.</div>
                ) : (
@@ -504,15 +531,15 @@ export default function App() {
       const isCancelled = app.status === 'cancelled';
 
       return (
-        <div className="container fade-in" style={{ paddingTop: 20 }}>
+        <div className="container page-enter" style={{ paddingTop: 20 }}>
             <div className="nav-header">
                <button className="btn-icon-sm" onClick={() => navigateTo('dashboard')}><ChevronLeft /></button>
                <h3>Acompanhamento</h3>
                <div style={{width: 44}}></div>
            </div>
 
-           <div className="card status-card">
-               <div className="status-icon-lg">
+           <div className="card status-card reveal-on-scroll">
+               <div className="status-icon-lg pulse-animation">
                    {app.status === 'pending' && <Clock size={40}/>}
                    {app.status === 'confirmed' && <CheckCircle size={40}/>}
                    {app.status === 'in_progress' && <Droplet size={40}/>}
@@ -541,7 +568,7 @@ export default function App() {
                )}
            </div>
 
-           <div className="card">
+           <div className="card reveal-on-scroll">
                <h3 style={{marginBottom:20}}>Detalhes do Serviço</h3>
                
                <div style={{display:'flex', alignItems:'center', gap:16, marginBottom: 16}}>
@@ -591,17 +618,17 @@ export default function App() {
 
   const Dashboard = () => {
     return (
-      <div className="container dashboard-grid" style={{paddingTop: 24}}>
+      <div className="container dashboard-grid page-enter" style={{paddingTop: 24}}>
          {/* Left Column: User Context */}
          <div className="dash-col-left">
-            <div className="card dashboard-header-card clickable-card" onClick={() => navigateTo('user-profile')}>
+            <div className="card dashboard-header-card clickable-card reveal-on-scroll" onClick={() => navigateTo('user-profile')}>
                <div className="dashboard-welcome"><h3>Olá, {profile?.full_name?.split(' ')[0]}!</h3><p>Ver meu perfil</p></div>
                <div className="dashboard-icon">
                   {profile?.full_name?.charAt(0) || '🐶'}
                </div>
             </div>
             
-            <div className="card" style={{marginTop: 24}}>
+            <div className="card reveal-on-scroll" style={{marginTop: 24}}>
                <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16}}>
                    <h3 style={{margin:0}}>Meus Pets</h3>
                    <span style={{fontSize:'0.8rem', color:'var(--primary)'}} onClick={() => navigateTo('user-profile')}>Gerenciar</span>
@@ -621,7 +648,7 @@ export default function App() {
          {/* Right Column: Actions & History */}
          <div className="dash-col-right">
             {/* Call to Action - Booking */}
-            <div className="card cta-card-gradient">
+            <div className="card cta-card-gradient reveal-on-scroll">
                 <div>
                    <h3 style={{color:'white'}}>Hora do Banho?</h3>
                    <p style={{color:'rgba(255,255,255,0.9)'}}>Agende um horário para seu melhor amigo em poucos cliques.</p>
@@ -631,7 +658,7 @@ export default function App() {
                 </button>
             </div>
 
-            <div className="card" style={{marginTop: 20}}>
+            <div className="card reveal-on-scroll" style={{marginTop: 20}}>
                <h3>Últimos Agendamentos</h3>
                {apps.length === 0 ? <p style={{color:'#999', padding:'20px 0', textAlign:'center'}}>Nenhum histórico recente.</p> : apps.slice(0, 5).map(a => (
                  <div key={a.id} className="history-item clickable-card" onClick={() => { setSelectedAppointment(a); navigateTo('appointment-details'); }}>

@@ -5,14 +5,14 @@ import { Heart, Star, Camera, ChevronDown } from 'lucide-react';
 // URL base do Bucket 'site-assets' do seu projeto Supabase atualizado
 const BASE_STORAGE_URL = 'https://qvkfoitbatyrwqbicwwc.supabase.co/storage/v1/object/public/site-assets'; 
 
-// Nome da imagem de capa (faça upload de um arquivo chamado 'bg.jpg' no bucket)
-const HEADER_BG = 'bg.jpg'; 
+// Nome da imagem de capa alterado para 3.jpg conforme solicitado
+const HEADER_BG = '3.jpg'; 
 
-// Nomes das imagens da galeria (faça upload de '1.jpg', '2.jpg', etc)
+// Nomes das imagens da galeria
 const GALLERY_IMAGES = [
   '1.jpg', 
   '2.jpg', 
-  '3.jpg', 
+  'bg.jpg', // Adicionei a bg antiga na galeria para não perder
   '4.jpg', 
   '5.jpg', 
   '6.jpg',
@@ -28,16 +28,16 @@ export const AboutUs: React.FC = () => {
   }, []);
 
   return (
-    <div className="about-page fade-in">
+    <div className="about-page page-enter">
       {/* Hero Header */}
       <div 
-        className="about-hero" 
+        className="about-hero reveal-on-scroll" 
         style={{ backgroundImage: `url(${BASE_STORAGE_URL}/${HEADER_BG})` }}
       >
         <div className="about-hero-overlay">
           <div className="about-hero-content">
-            <h1 className="about-title">Nossa História</h1>
-            <p className="about-subtitle">Amor, dedicação e muitos rabos abanando.</p>
+            <h1 className="about-title fade-in-up">Nossa História</h1>
+            <p className="about-subtitle fade-in-up delay-1">Amor, dedicação e muitos rabos abanando.</p>
             <div className="about-scroll-indicator">
               <ChevronDown size={32} />
             </div>
@@ -47,8 +47,8 @@ export const AboutUs: React.FC = () => {
 
       <div className="container" style={{ marginTop: '-60px', position: 'relative', zIndex: 10 }}>
         {/* Card de Texto "Sobre Nós" */}
-        <div className="card about-text-card">
-          <div className="about-icon-header">
+        <div className="card about-text-card reveal-on-scroll">
+          <div className="about-icon-header pulse-animation">
             <Heart fill="#FF8C42" color="#FF8C42" size={32} />
           </div>
           <h2>Quem somos nós?</h2>
@@ -66,12 +66,12 @@ export const AboutUs: React.FC = () => {
 
         {/* Galeria de Fotos Aleatórias */}
         <div className="about-gallery-section">
-          <h3 className="section-title text-center">Momentos Especiais</h3>
-          <p className="text-center" style={{ marginBottom: 24 }}>Um pouco do nosso dia a dia e dos nossos "filhos".</p>
+          <h3 className="section-title text-center reveal-on-scroll">Momentos Especiais</h3>
+          <p className="text-center reveal-on-scroll" style={{ marginBottom: 24 }}>Um pouco do nosso dia a dia e dos nossos "filhos".</p>
           
           <div className="masonry-grid">
             {photos.map((img, index) => (
-              <div key={index} className="masonry-item fade-in-slide" style={{ animationDelay: `${index * 0.1}s` }}>
+              <div key={index} className="masonry-item reveal-on-scroll" style={{ transitionDelay: `${index * 0.1}s` }}>
                 <img 
                    src={`${BASE_STORAGE_URL}/${img}`} 
                    alt="Momento PetSpa" 
@@ -90,8 +90,8 @@ export const AboutUs: React.FC = () => {
         </div>
         
         {/* Call to Action Final */}
-        <div className="card cta-card-gradient mt-4 text-center" style={{ padding: 40, alignItems: 'center' }}>
-           <Star fill="white" color="white" size={40} style={{ marginBottom: 16 }} />
+        <div className="card cta-card-gradient mt-4 text-center reveal-on-scroll" style={{ padding: 40, alignItems: 'center' }}>
+           <div className="pulse-animation"><Star fill="white" color="white" size={40} style={{ marginBottom: 16 }} /></div>
            <h3 style={{ color: 'white' }}>Faça parte da nossa família</h3>
            <p style={{ color: 'rgba(255,255,255,0.9)' }}>Traga seu pet para nos conhecer pessoalmente.</p>
         </div>
