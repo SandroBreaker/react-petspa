@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { api } from '../services/api';
 import { geminiService } from '../services/gemini';
 import { Send, Sparkles, Bot, ChevronLeft, User, Loader2, Lock } from 'lucide-react';
-import { formatCurrency, toLocalISOString } from '../utils/ui';
+import { formatCurrency, toLocalISOString, getPetAvatarUrl } from '../utils/ui';
 
 // URL base do Bucket ATUALIZADA
 const BASE_STORAGE_URL = 'https://vfryefavzurwoiuznkwv.supabase.co/storage/v1/object/public/site-assets';
@@ -26,6 +26,10 @@ export const Chat: React.FC<ChatProps> = ({ onNavigate }) => {
   const [isProcessingAction, setIsProcessingAction] = useState(false);
   const [flowContext, setFlowContext] = useState<any>({});
   const [mode, setMode] = useState<'flow' | 'ai'>('flow');
+  
+  // Estado para gerenciar a imagem do avatar com fallback
+  // CORREÇÃO: Alterado de .png para .webp conforme solicitado
+  const [botAvatarSrc, setBotAvatarSrc] = useState(`${BASE_STORAGE_URL}/bot.webp`);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -406,7 +410,16 @@ export const Chat: React.FC<ChatProps> = ({ onNavigate }) => {
         </button>
         <div className="chat-header-info">
           <div className="chat-avatar-ring">
-             {mode === 'ai' ? <Sparkles size={20} /> : <img src={`${BASE_STORAGE_URL}/bot.png`} className="bot-avatar-img" alt="Bot" />}
+             {mode === 'ai' ? (
+                 <Sparkles size={20} /> 
+             ) : (
+                 <img 
+                    src={botAvatarSrc} 
+                    className="bot-avatar-img" 
+                    alt="Bot" 
+                    onError={() => setBotAvatarSrc(getPetAvatarUrl('PetSpa Bot'))}
+                 />
+             )}
           </div>
           <div>
             <h3 className="chat-title">Assistente PetSpa</h3>

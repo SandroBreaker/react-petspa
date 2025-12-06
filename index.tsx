@@ -2,7 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './src/App';
 import { ToastProvider } from './src/context/ToastContext';
-import './styles.css';
+import './src/styles/main.css';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
