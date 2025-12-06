@@ -3,7 +3,7 @@ import React from 'react';
 import { ChevronLeft, Plus } from 'lucide-react';
 import { Profile, Pet, Route } from '../types';
 import { useToast } from '../context/ToastContext';
-import { getAvatarUrl } from '../utils/ui';
+import { getAvatarUrl, getPetAvatarUrl } from '../utils/ui';
 
 interface UserProfileProps {
     profile: Profile | null;
@@ -58,7 +58,7 @@ export const UserProfileView: React.FC<UserProfileProps> = ({
          <div className="pet-grid">
            {pets.map(p => (
               <div key={p.id} className="card pet-card clickable-card reveal-on-scroll" onClick={() => { setSelectedPet(p); onNavigate('pet-details'); }}>
-                 <div className="pet-icon">🐾</div>
+                 <img src={getPetAvatarUrl(p.name)} className="pet-avatar-3d" alt={p.name} />
                  <strong>{p.name}</strong>
                  <span className="pet-breed">{p.breed || 'SRD'}</span>
               </div>

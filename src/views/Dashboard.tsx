@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Appointment, Pet, Profile, Route } from '../types';
-import { getAvatarUrl } from '../utils/ui';
+import { getAvatarUrl, getPetAvatarUrl } from '../utils/ui';
 
 interface DashboardProps {
     profile: Profile | null;
@@ -46,7 +46,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
                  <div className="pet-grid">
                    {pets.slice(0,4).map(p => (
                       <div key={p.id} className="card pet-card clickable-card" onClick={() => { setSelectedPet(p); onNavigate('pet-details'); }}>
-                         <div className="pet-icon">🐾</div><strong style={{fontSize:'0.9rem'}}>{p.name}</strong>
+                         <img src={getPetAvatarUrl(p.name)} className="pet-avatar-3d" alt={p.name} />
+                         <strong style={{fontSize:'0.9rem'}}>{p.name}</strong>
                       </div>
                    ))}
                  </div>

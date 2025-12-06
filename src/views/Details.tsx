@@ -2,7 +2,7 @@
 import React from 'react';
 import { ChevronLeft, Clock, CheckCircle, Droplet, Sparkles, X, Calendar, DollarSign, Scissors } from 'lucide-react';
 import { Appointment, Pet, Route } from '../types';
-import { formatCurrency, formatDate } from '../utils/ui';
+import { formatCurrency, formatDate, getPetAvatarUrl } from '../utils/ui';
 
 interface PetDetailsProps {
     selectedPet: Pet | null;
@@ -24,7 +24,7 @@ export const PetDetailsView: React.FC<PetDetailsProps> = ({ selectedPet, apps, o
            </div>
 
            <div className="card reveal-on-scroll" style={{textAlign:'center', padding: '40px 20px'}}>
-               <div className="pet-icon" style={{width: 80, height: 80, fontSize: '2.5rem', margin: '0 auto 16px'}}>🐾</div>
+               <img src={getPetAvatarUrl(selectedPet.name)} alt={selectedPet.name} style={{width: 80, height: 80, margin: '0 auto 16px', display: 'block'}} className="pet-avatar-3d" />
                <h2>{selectedPet.name}</h2>
                <p>{selectedPet.breed || 'Sem raça definida'}</p>
                <div style={{display:'flex', justifyContent:'center', gap: 12, marginTop: 16}}>

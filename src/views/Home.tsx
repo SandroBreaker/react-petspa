@@ -35,6 +35,7 @@ export const HomePage: React.FC<HomePageProps> = ({ session, onNavigate, onOpenB
             </button>
           </div>
         </div>
+        <img src={`${BASE_STORAGE_URL}/homepage4.png`} className="hero-pets-img fade-in-up delay-3" alt="Pets da PetSpa" />
       </header>
       
       <div className="container" style={{ marginTop: '-40px', position: 'relative', zIndex: 20 }}>
@@ -79,7 +80,7 @@ export const HomePage: React.FC<HomePageProps> = ({ session, onNavigate, onOpenB
                         <p>Equipe treinada para lidar com todos os temperamentos.</p>
                     </div>
                     <div className="feature-img-wrapper">
-                        <img src={`${BASE_STORAGE_URL}/prof.png`} alt="Profissionais" className="feature-png" />
+                        <img src={`${BASE_STORAGE_URL}/homepage4.png`} alt="Profissionais" className="feature-png" />
                     </div>
                 </div>
 
@@ -101,7 +102,7 @@ export const HomePage: React.FC<HomePageProps> = ({ session, onNavigate, onOpenB
                         <p>Produtos hipoalergênicos e tratamento VIP.</p>
                     </div>
                     <div className="feature-img-wrapper">
-                        <img src={`${BASE_STORAGE_URL}/amor.png`} alt="Amor" className="feature-png" />
+                        <img src={`${BASE_STORAGE_URL}/random.png`} alt="Amor" className="feature-png" />
                     </div>
                 </div>
 

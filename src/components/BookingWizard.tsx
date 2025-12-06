@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { X } from 'lucide-react';
 import { api } from '../services/api';
-import { formatCurrency, toLocalISOString } from '../utils/ui';
+import { formatCurrency, toLocalISOString, getPetAvatarUrl } from '../utils/ui';
 import { useToast } from '../context/ToastContext';
 import { Pet, Service } from '../types';
 
@@ -78,7 +78,7 @@ export const BookingWizard: React.FC<BookingWizardProps> = ({
                                         <div key={p.id} 
                                              className={`pet-select-card ${wizPet === p.id ? 'selected' : ''}`}
                                              onClick={() => setWizPet(p.id)}>
-                                            <div className="pet-icon">🐾</div>
+                                            <img src={getPetAvatarUrl(p.name)} className="pet-avatar-3d" style={{width: 48, height: 48}} alt={p.name} />
                                             <span>{p.name}</span>
                                         </div>
                                     ))}

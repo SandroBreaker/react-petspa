@@ -1,8 +1,12 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { api } from '../services/api';
 import { geminiService } from '../services/gemini';
 import { Send, Sparkles, Bot, ChevronLeft, User, Loader2, Lock } from 'lucide-react';
 import { formatCurrency, toLocalISOString } from '../utils/ui';
+
+// URL base do Bucket ATUALIZADA
+const BASE_STORAGE_URL = 'https://vfryefavzurwoiuznkwv.supabase.co/storage/v1/object/public/site-assets';
 
 interface ChatProps {
   onClose?: () => void;
@@ -402,7 +406,7 @@ export const Chat: React.FC<ChatProps> = ({ onNavigate }) => {
         </button>
         <div className="chat-header-info">
           <div className="chat-avatar-ring">
-             {mode === 'ai' ? <Sparkles size={20} /> : <Bot size={20} />}
+             {mode === 'ai' ? <Sparkles size={20} /> : <img src={`${BASE_STORAGE_URL}/bot.png`} className="bot-avatar-img" alt="Bot" />}
           </div>
           <div>
             <h3 className="chat-title">Assistente PetSpa</h3>
