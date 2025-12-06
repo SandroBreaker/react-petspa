@@ -1,8 +1,7 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { api } from '../services/api';
 import { geminiService } from '../services/gemini';
-import { Send, Sparkles, Bot, ChevronLeft, User, Loader2 } from 'lucide-react';
+import { Send, Sparkles, Bot, ChevronLeft, User, Loader2, Lock } from 'lucide-react';
 import { formatCurrency, toLocalISOString } from '../utils/ui';
 
 interface ChatProps {
@@ -20,17 +19,15 @@ interface Message {
 export const Chat: React.FC<ChatProps> = ({ onNavigate }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isTyping, setIsTyping] = useState(false);
-  const [isProcessingAction, setIsProcessingAction] = useState(false); // Novo estado para overlay
+  const [isProcessingAction, setIsProcessingAction] = useState(false);
   const [flowContext, setFlowContext] = useState<any>({});
-  
-  // Controle de Modo: 'flow' (Botões/Script) ou 'ai' (Conversa Livre)
   const [mode, setMode] = useState<'flow' | 'ai'>('flow');
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   
-  // Estados de Input
-  const [inputType, setInputType] = useState<'text' | 'number' | 'datetime-local' | null>('text');
+  // inputType agora suporta 'password'
+  const [inputType, setInputType] = useState<'text' | 'number' | 'datetime-local' | 'password' | null>('text');
   const [inputValue, setInputValue] = useState('');
   const [inputHandler, setInputHandler] = useState<((val: string) => Promise<string>) | null>(null);
 
@@ -42,7 +39,6 @@ export const Chat: React.FC<ChatProps> = ({ onNavigate }) => {
     scrollToBottom();
   }, [messages, isTyping, inputType]);
 
-  // Adjust scroll when keyboard opens (window resize)
   useEffect(() => {
     const handleResize = () => scrollToBottom();
     window.addEventListener('resize', handleResize);
@@ -53,40 +49,163 @@ export const Chat: React.FC<ChatProps> = ({ onNavigate }) => {
     setMessages(prev => [...prev, { id: Date.now().toString(), text, sender, options }]);
   };
 
-  // --- LÓGICA DE MÁQUINA DE ESTADOS (Fluxo Rígido) ---
   const processNode = async (nodeId: string) => {
     setIsTyping(true);
     setMode('flow');
-    
-    // Delay natural de "pensando"
     await new Promise(r => setTimeout(r, 800)); 
-    
     setIsTyping(false);
-    setIsProcessingAction(false); // Libera o overlay
+    setIsProcessingAction(false);
 
     let node: any = {};
+    const userSession = await api.auth.getSession();
 
     switch (nodeId) {
       case 'START':
         setInputType('text');
+        
+        // Verifica se usuário já está logado para adaptar mensagem
+        if (userSession) {
+            node = {
+                message: `Olá, ${userSession.user.user_metadata.full_name?.split(' ')[0] || 'Tutor'}! 🐶 Como posso ajudar?`,
+                options: [
+                    { label: '📅 Agendar Banho', nextNode: 'FLOW_SCHEDULE_INIT' },
+                    { label: '🧠 Dicas com IA', action: 'startAiChat' },
+                    { label: '🐾 Meus Pets', nextNode: 'CHECK_AUTH_PETS' },
+                    { label: '🚪 Sair da Conta', action: 'logout' }
+                ]
+            };
+        } else {
+            node = {
+                message: 'Olá! Sou o assistente virtual da PetSpa 🐶. Como posso te ajudar hoje?',
+                options: [
+                    { label: '📅 Agendar Banho', nextNode: 'FLOW_SCHEDULE_INIT' },
+                    { label: '🔐 Login / Cadastro', nextNode: 'FLOW_AUTH_CHOICE' },
+                    { label: '🧠 Dicas com IA', action: 'startAiChat' },
+                    { label: '📍 Endereço', nextNode: 'CONTACT' }
+                ]
+            };
+        }
+        break;
+
+      // --- AUTHENTICATION FLOWS ---
+      case 'FLOW_AUTH_CHOICE':
+        setInputType(null);
         node = {
-          message: 'Olá! Sou o assistente virtual da PetSpa 🐶. Como posso te ajudar hoje?',
-          options: [
-            { label: '📅 Agendar Banho', nextNode: 'FLOW_SCHEDULE_INIT' },
-            { label: '🧠 Dicas com IA', action: 'startAiChat' },
-            { label: '🐾 Meus Pets', nextNode: 'CHECK_AUTH_PETS' },
-            { label: '📍 Endereço e Contato', nextNode: 'CONTACT' }
-          ]
+            message: 'Para acessar seus dados e agendar, preciso que você entre na sua conta.',
+            options: [
+                { label: 'Entrar', nextNode: 'FLOW_LOGIN_EMAIL' },
+                { label: 'Criar Conta', nextNode: 'FLOW_REGISTER_NAME' },
+                { label: 'Voltar', nextNode: 'START' }
+            ]
         };
         break;
+
+      // LOGIN
+      case 'FLOW_LOGIN_EMAIL':
+        node = { message: 'Por favor, digite seu **e-mail**:' };
+        setInputType('text');
+        setInputHandler(() => async (val) => {
+            setFlowContext((p:any) => ({ ...p, loginEmail: val }));
+            return 'FLOW_LOGIN_PASS';
+        });
+        break;
       
+      case 'FLOW_LOGIN_PASS':
+        node = { message: 'Agora digite sua **senha**:' };
+        setInputType('password'); // Ativa input de senha
+        setInputHandler(() => async (val) => {
+            const { loginEmail } = flowContext;
+            setIsProcessingAction(true);
+            try {
+                const { error } = await api.auth.signIn(loginEmail, val);
+                if (error) {
+                    addMessage('❌ E-mail ou senha incorretos.', 'bot');
+                    return 'FLOW_AUTH_CHOICE';
+                }
+                return 'AUTH_SUCCESS';
+            } catch (e) {
+                addMessage('Ocorreu um erro no login.', 'bot');
+                return 'START';
+            }
+        });
+        break;
+
+      // REGISTER
+      case 'FLOW_REGISTER_NAME':
+        node = { message: 'Vamos criar sua conta! Primeiro, qual seu **nome completo**?' };
+        setInputType('text');
+        setInputHandler(() => async (val) => {
+             setFlowContext((p:any) => ({ ...p, regName: val }));
+             return 'FLOW_REGISTER_EMAIL';
+        });
+        break;
+
+      case 'FLOW_REGISTER_EMAIL':
+        node = { message: `Prazer, ${flowContext.regName}! Qual seu **e-mail**?` };
+        setInputType('text');
+        setInputHandler(() => async (val) => {
+             setFlowContext((p:any) => ({ ...p, regEmail: val }));
+             return 'FLOW_REGISTER_PHONE';
+        });
+        break;
+      
+      case 'FLOW_REGISTER_PHONE':
+        node = { message: 'Qual seu **celular** (para contato sobre os pets)?' };
+        setInputType('number');
+        setInputHandler(() => async (val) => {
+             setFlowContext((p:any) => ({ ...p, regPhone: val }));
+             return 'FLOW_REGISTER_PASS';
+        });
+        break;
+
+      case 'FLOW_REGISTER_PASS':
+        node = { message: 'Por último, escolha uma **senha** segura:' };
+        setInputType('password');
+        setInputHandler(() => async (val) => {
+             const { regName, regEmail, regPhone } = flowContext;
+             setIsProcessingAction(true);
+             try {
+                const { error } = await api.auth.signUp(regEmail, val, regName, regPhone);
+                if (error) {
+                    addMessage('❌ Erro ao cadastrar: ' + error.message, 'bot');
+                    return 'FLOW_AUTH_CHOICE';
+                }
+                return 'AUTH_SUCCESS_REGISTER';
+             } catch (e) {
+                return 'START';
+             }
+        });
+        break;
+
+      case 'AUTH_SUCCESS':
+        node = {
+            message: 'Login realizado com sucesso! 🎉',
+            options: [
+                { label: 'Ir para Perfil', action: 'navProfile' },
+                { label: 'Continuar aqui', nextNode: 'START' }
+            ]
+        };
+        setInputType(null);
+        break;
+
+      case 'AUTH_SUCCESS_REGISTER':
+        node = {
+            message: 'Cadastro realizado! Bem-vindo(a) à família PetSpa. 🐾',
+            options: [
+                { label: 'Cadastrar Pet', action: 'navProfile' },
+                { label: 'Menu Principal', nextNode: 'START' }
+            ]
+        };
+        setInputType(null);
+        break;
+      
+      // --- SCHEDULING FLOW ---
       case 'FLOW_SCHEDULE_INIT':
         setInputType(null);
-        const user = await api.auth.getSession();
-        if (!user) {
-          node = { message: 'Para agendar, preciso que entre na sua conta.', options: [{ label: '🔐 Fazer Login', action: 'navLogin' }, { label: '⬅️ Voltar', nextNode: 'START' }] };
+        if (!userSession) {
+          node = { message: 'Para agendar, preciso que entre na sua conta.', options: [{ label: '🔐 Fazer Login', nextNode: 'FLOW_AUTH_CHOICE' }, { label: '⬅️ Voltar', nextNode: 'START' }] };
         } else {
-          const pets = await api.booking.getMyPets(user.user.id);
+          const pets = await api.booking.getMyPets(userSession.user.id);
           if (pets.length === 0) {
             node = { message: 'Você ainda não tem pets cadastrados no sistema.', options: [{ label: 'Cadastrar Agora', action: 'navProfile' }, { label: 'Voltar', nextNode: 'START' }] };
           } else {
@@ -164,11 +283,10 @@ export const Chat: React.FC<ChatProps> = ({ onNavigate }) => {
         break;
       
       case 'CHECK_AUTH_PETS':
-         const session = await api.auth.getSession();
-         if(!session) {
-            node = { message: 'Você precisa estar logado.', options: [{label: 'Fazer Login', action: 'navLogin'}] };
+         if(!userSession) {
+            node = { message: 'Você precisa estar logado.', options: [{label: 'Fazer Login', nextNode: 'FLOW_AUTH_CHOICE'}] };
          } else {
-            const myPets = await api.booking.getMyPets(session.user.id);
+            const myPets = await api.booking.getMyPets(userSession.user.id);
             const petsList = myPets.length ? myPets.map(p => p.name).join(', ') : 'Nenhum pet encontrado.';
             node = { 
                 message: `Seus pets cadastrados: ${petsList}`, 
@@ -188,25 +306,26 @@ export const Chat: React.FC<ChatProps> = ({ onNavigate }) => {
   };
 
   const handleOption = async (opt: any) => {
-    setIsProcessingAction(true); // Ativa overlay de processamento
+    setIsProcessingAction(true);
     addMessage(opt.label, 'user');
-    
-    // Pequena pausa para sensação de processamento do clique
     await new Promise(r => setTimeout(r, 400));
 
-    // Actions Específicas
     if (opt.action === 'startAiChat') {
         setMode('ai');
         setIsProcessingAction(false);
         addMessage('Modo IA ativado! 🧠\nPergunte sobre raças, dicas de saúde ou cuidados.', 'bot', [{label: 'Encerrar IA', nextNode: 'START'}]);
         return;
     }
+    
+    if (opt.action === 'logout') {
+        await api.auth.signOut();
+        addMessage('Você saiu da conta.', 'bot');
+        processNode('START');
+        return;
+    }
 
     if (opt.action === 'setFlowData') {
-      setFlowContext((prev: any) => ({
-        ...prev,
-        ...opt.payload // Spread direto do payload (suporta multiplas chaves)
-      }));
+      setFlowContext((prev: any) => ({ ...prev, ...opt.payload }));
     }
 
     if (opt.action === 'finalizeSchedule') {
@@ -224,22 +343,27 @@ export const Chat: React.FC<ChatProps> = ({ onNavigate }) => {
     if (opt.action === 'navProfile') onNavigate('user-profile');
 
     if (opt.nextNode) processNode(opt.nextNode);
-    else setIsProcessingAction(false); // Se não tiver nextNode, libera
+    else setIsProcessingAction(false);
   };
 
   const handleInputSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputValue.trim()) return;
     
-    const userText = inputType === 'datetime-local' ? new Date(inputValue).toLocaleString() : inputValue;
-    addMessage(userText, 'user');
+    // MASCARAR SENHA NO CHAT
+    const isPassword = inputType === 'password';
+    const displayValue = isPassword ? '••••••' : (inputType === 'datetime-local' ? new Date(inputValue).toLocaleString() : inputValue);
     const rawVal = inputValue;
+
+    addMessage(displayValue, 'user');
     setInputValue('');
     setIsProcessingAction(true);
 
     // 1. Fluxo de Input Específico
     if (inputHandler) {
         setInputType(null); 
+        // Pequeno delay para UX
+        await new Promise(r => setTimeout(r, 500));
         const nextNode = await inputHandler(rawVal);
         processNode(nextNode);
         return;
@@ -247,7 +371,7 @@ export const Chat: React.FC<ChatProps> = ({ onNavigate }) => {
 
     // 2. Chat Inteligente (Gemini)
     setIsTyping(true);
-    setIsProcessingAction(false); // Libera overlay para mostrar typing
+    setIsProcessingAction(false); 
     const history = messages.slice(-6).map(m => ({
         role: m.sender === 'user' ? 'user' : 'model',
         parts: [{ text: m.text }]
@@ -265,7 +389,6 @@ export const Chat: React.FC<ChatProps> = ({ onNavigate }) => {
 
   return (
     <div className="chat-layout">
-      {/* Overlay de Processamento */}
       {isProcessingAction && (
         <div className="chat-processing-overlay fade-in">
           <Loader2 className="spinner" size={48} color="white" />
@@ -273,7 +396,6 @@ export const Chat: React.FC<ChatProps> = ({ onNavigate }) => {
         </div>
       )}
 
-      {/* Header Fixo */}
       <div className="chat-header-modern">
         <button onClick={() => onNavigate('home')} className="btn-icon-sm btn-ghost-white">
           <ChevronLeft />
@@ -292,12 +414,8 @@ export const Chat: React.FC<ChatProps> = ({ onNavigate }) => {
         </div>
       </div>
       
-      {/* Lista de Mensagens (Scroll) */}
       <div className="chat-messages-area">
-        <div className="chat-date-divider">
-           <span>Hoje</span>
-        </div>
-
+        <div className="chat-date-divider"><span>Hoje</span></div>
         {messages.map((msg) => (
           <div key={msg.id} className={`chat-row ${msg.sender === 'user' ? 'row-user' : 'row-bot'}`}>
             {msg.sender === 'bot' && (
@@ -310,7 +428,6 @@ export const Chat: React.FC<ChatProps> = ({ onNavigate }) => {
                 <div className={`chat-bubble ${msg.sender === 'user' ? 'bubble-user' : 'bubble-bot'}`}>
                   <div dangerouslySetInnerHTML={{ __html: msg.text.replace(/\n/g, '<br/>') }} />
                 </div>
-
                 {msg.sender === 'bot' && msg.options && msg.options.length > 0 && (
                   <div className="chat-options-grid fade-in-slide delay-options">
                     {msg.options.map((opt, idx) => (
@@ -329,7 +446,6 @@ export const Chat: React.FC<ChatProps> = ({ onNavigate }) => {
             )}
           </div>
         ))}
-
         {isTyping && (
            <div className="chat-row row-bot">
              <div className="chat-msg-avatar"><Bot size={14} /></div>
@@ -341,18 +457,27 @@ export const Chat: React.FC<ChatProps> = ({ onNavigate }) => {
         <div ref={messagesEndRef} style={{ height: 1 }} />
       </div>
 
-      {/* Input Area (Footer) */}
       {inputType && (
           <form onSubmit={handleInputSubmit} className="chat-footer-modern">
-             <input 
-               ref={inputRef}
-               type={inputType} 
-               className="chat-input-modern" 
-               value={inputValue} 
-               onChange={e => setInputValue(e.target.value)}
-               placeholder={inputType === 'datetime-local' ? '' : (mode === 'ai' ? 'Digite para a IA...' : 'Digite sua resposta...')}
-               min={inputType === 'datetime-local' ? toLocalISOString(new Date()) : undefined}
-             />
+             <div className="relative flex-1">
+                 <input 
+                   ref={inputRef}
+                   type={inputType === 'password' ? 'password' : (inputType || 'text')} 
+                   className="chat-input-modern w-full" 
+                   value={inputValue} 
+                   onChange={e => setInputValue(e.target.value)}
+                   placeholder={
+                        inputType === 'password' ? 'Digite sua senha aqui...' : 
+                        inputType === 'datetime-local' ? '' : 
+                        (mode === 'ai' ? 'Digite para a IA...' : 'Digite sua resposta...')
+                   }
+                   min={inputType === 'datetime-local' ? toLocalISOString(new Date()) : undefined}
+                   autoFocus
+                 />
+                 {inputType === 'password' && (
+                     <Lock className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                 )}
+             </div>
              <button type="submit" className="chat-send-btn" disabled={!inputValue.trim()}>
                 <Send size={20} />
              </button>

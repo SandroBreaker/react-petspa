@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from './lib/supabase';
 import { api } from './services/api';
@@ -18,7 +17,7 @@ import { BookingWizard } from './components/BookingWizard';
 // Views
 import { HomePage } from './views/Home';
 import { ServicesPage } from './views/Services';
-import { LoginPage } from './views/Login';
+import { LoginPage, RegisterPage } from './views/Login';
 import { Dashboard } from './views/Dashboard';
 import { UserProfileView } from './views/Profile';
 import { PetDetailsView, AppointmentDetailsView } from './views/Details';
@@ -33,7 +32,8 @@ const MASCOT_COMMENTS: Partial<Record<Route, string[]>> = {
     'admin': ['Modo chefe ativado 🕶️', 'De olho nos números 📈', 'Quem manda é você!'],
     'chat': ['Meu primo digital é muito esperto 🤖', 'Pode perguntar qualquer coisa!', 'Dica: pergunte sobre raças.'],
     'pet-details': ['Aww, que fofura! 😍', 'Detalhes importantes aqui.', 'Histórico impecável.'],
-    'appointment-details': ['Acompanhando tudo... 🕵️', 'Fase importante!', 'Quase pronto!']
+    'appointment-details': ['Acompanhando tudo... 🕵️', 'Fase importante!', 'Quase pronto!'],
+    'register': ['Bem-vindo à família! 🐾', 'Preencha tudo com carinho.', 'Quase lá!']
 };
 
 export default function App() {
@@ -96,7 +96,8 @@ export default function App() {
       } else { 
           setProfile(null); 
           setPets([]); setApps([]); 
-          setView('home'); 
+          // Não forçar redirect se estiver em register ou login para evitar UX ruim
+          if (view !== 'register' && view !== 'login') setView('home'); 
       }
     });
     return () => subscription.unsubscribe();
@@ -254,6 +255,13 @@ export default function App() {
           
           {view === 'login' && (
             <LoginPage 
+                onNavigate={navigateTo} 
+                setLoginStage={setLoginStage} 
+            />
+          )}
+
+          {view === 'register' && (
+            <RegisterPage 
                 onNavigate={navigateTo} 
                 setLoginStage={setLoginStage} 
             />
