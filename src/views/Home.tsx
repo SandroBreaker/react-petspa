@@ -1,11 +1,11 @@
 
 import React from 'react';
-import { Sparkles, Scissors, Droplet, Heart, Award, ShieldCheck } from 'lucide-react';
+import { Sparkles, Scissors, Droplet, Heart } from 'lucide-react';
 import { Route } from '../types';
 import { getAvatarUrl } from '../utils/ui';
 
-// URL base do Bucket
-const BASE_STORAGE_URL = 'https://qvkfoitbatyrwqbicwwc.supabase.co/storage/v1/object/public/site-assets';
+// URL base do Bucket ATUALIZADA
+const BASE_STORAGE_URL = 'https://vfryefavzurwoiuznkwv.supabase.co/storage/v1/object/public/site-assets';
 
 interface HomePageProps {
     session: any;
@@ -18,7 +18,6 @@ export const HomePage: React.FC<HomePageProps> = ({ session, onNavigate, onOpenB
       <header 
         className="hero-header reveal-on-scroll"
         style={{ 
-            // Ajustei a opacidade para mostrar mais a foto (era 0.9 agora 0.6->0.8)
             backgroundImage: `linear-gradient(to bottom, rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.8)), url(${BASE_STORAGE_URL}/bg.jpg)`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
@@ -68,25 +67,44 @@ export const HomePage: React.FC<HomePageProps> = ({ session, onNavigate, onOpenB
             </div>
          </div>
          
-         {/* Features Section */}
+         {/* Features Section - Organic PNG Images */}
          <div className="features-section mt-4">
              <h2 className="section-title reveal-on-scroll">Por que a PetSpa?</h2>
              <div className="features-grid">
+                
+                {/* Profissionais */}
                 <div className="feature-item feature-green reveal-on-scroll">
-                    <div className="feature-icon"><Award /></div>
-                    <h3>Profissionais Certificados</h3>
-                    <p>Equipe treinada para lidar com todos os temperamentos.</p>
+                    <div className="feature-text-content">
+                        <h3>Profissionais Certificados</h3>
+                        <p>Equipe treinada para lidar com todos os temperamentos.</p>
+                    </div>
+                    <div className="feature-img-wrapper">
+                        <img src={`${BASE_STORAGE_URL}/prof.png`} alt="Profissionais" className="feature-png" />
+                    </div>
                 </div>
+
+                {/* Ambiente Seguro */}
                 <div className="feature-item feature-red reveal-on-scroll delay-1">
-                    <div className="feature-icon"><ShieldCheck /></div>
-                    <h3>Ambiente Seguro</h3>
-                    <p>Monitoramento e higienização hospitalar constante.</p>
+                     <div className="feature-text-content">
+                        <h3>Ambiente Seguro</h3>
+                        <p>Monitoramento e higienização hospitalar constante.</p>
+                    </div>
+                    <div className="feature-img-wrapper">
+                        <img src={`${BASE_STORAGE_URL}/amb.png`} alt="Ambiente" className="feature-png" />
+                    </div>
                 </div>
+
+                {/* Amor em cada detalhe */}
                 <div className="feature-item feature-blue reveal-on-scroll delay-2">
-                    <div className="feature-icon"><Heart /></div>
-                    <h3>Amor em cada detalhe</h3>
-                    <p>Produtos hipoalergênicos e tratamento VIP.</p>
+                     <div className="feature-text-content">
+                        <h3>Amor em cada detalhe</h3>
+                        <p>Produtos hipoalergênicos e tratamento VIP.</p>
+                    </div>
+                    <div className="feature-img-wrapper">
+                        <img src={`${BASE_STORAGE_URL}/amor.png`} alt="Amor" className="feature-png" />
+                    </div>
                 </div>
+
              </div>
          </div>
 

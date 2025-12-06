@@ -3,8 +3,8 @@ import React from 'react';
 import { X } from 'lucide-react';
 import { LoginStage, Route } from '../types';
 
-// URL base do Bucket
-const BASE_STORAGE_URL = 'https://qvkfoitbatyrwqbicwwc.supabase.co/storage/v1/object/public/site-assets';
+// URL base do Bucket ATUALIZADA
+const BASE_STORAGE_URL = 'https://vfryefavzurwoiuznkwv.supabase.co/storage/v1/object/public/site-assets';
 
 interface MascotCompanionProps {
     showBookingModal: boolean;

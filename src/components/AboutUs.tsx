@@ -2,8 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { Heart, Star, Camera, ChevronDown } from 'lucide-react';
 
-// URL base do Bucket 'site-assets' do seu projeto Supabase atualizado
-const BASE_STORAGE_URL = 'https://qvkfoitbatyrwqbicwwc.supabase.co/storage/v1/object/public/site-assets'; 
+// URL base do Bucket ATUALIZADA
+const BASE_STORAGE_URL = 'https://vfryefavzurwoiuznkwv.supabase.co/storage/v1/object/public/site-assets';
 
 // Nome da imagem de capa alterado para 3.jpg conforme solicitado
 const HEADER_BG = '3.jpg'; 

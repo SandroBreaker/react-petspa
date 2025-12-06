@@ -96,8 +96,10 @@ export default function App() {
             console.log("Iniciando auto-login de desenvolvimento...");
             setLoginStage('authenticating');
             try {
+                // api.auth.signIn agora retorna { data, error }
                 const { data, error } = await api.auth.signIn(DEV_USER.email, DEV_USER.pass);
-                if (!error && data.session) {
+                
+                if (!error && data?.session) {
                     // Sucesso no auto login
                     setSession(data.session);
                     setLoginStage('welcome');
@@ -109,9 +111,12 @@ export default function App() {
                         // Esconde o balão após 8 segundos para dar tempo de ler
                         setTimeout(() => setShowMascotBubble(false), 8000);
                     }, 1000);
+                } else {
+                    console.warn("Auto-login falhou (Credenciais ou Rede):", error?.message);
+                    setLoginStage('idle');
                 }
             } catch (e) {
-                console.error("Falha no auto-login", e);
+                console.error("Erro crítico no auto-login:", e);
                 setLoginStage('idle');
             }
         }

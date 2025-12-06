@@ -1,3 +1,4 @@
+
 /* =========================================
    1. TOKENS & RESET (PREMIUM THEME)
    ========================================= */
@@ -644,33 +645,53 @@ input::placeholder { color: #A0AEC0; opacity: 1; }
     box-shadow: 0 2px 8px rgba(0,0,0,0.2);
 }
 
-/* Home Features */
+/* Home Features - NEW ORGANIC STYLE */
 .features-section { margin-bottom: 32px; }
 .features-grid { display: grid; gap: 16px; }
+
 .feature-item {
-    background: white; padding: 20px; border-radius: 20px;
-    display: flex; flex-direction: column; align-items: center; text-align: center;
+    background: white; padding: 20px; border-radius: 24px;
+    display: flex; justify-content: space-between; align-items: center;
+    text-align: left;
     box-shadow: var(--shadow-sm);
     transition: transform 0.3s;
+    position: relative;
+    overflow: hidden;
+    min-height: 110px;
 }
-.feature-item:hover { transform: translateY(-2px); }
-.feature-icon { 
-    color: var(--primary); margin-bottom: 8px; 
-    width: 40px; height: 40px; background: var(--accent); 
-    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+.feature-item:hover { transform: translateY(-2px); box-shadow: var(--shadow-card); }
+
+.feature-text-content {
+    flex: 1; z-index: 2;
+    padding-right: 10px;
 }
-.feature-item h3 { font-size: 1rem; margin-bottom: 4px; }
-.feature-item p { font-size: 0.85rem; margin: 0; color: var(--secondary-light); }
 
-/* Feature Card Accents */
-.feature-green { border-left: 5px solid #00B894; }
-.feature-green .feature-icon { color: #00B894; background: #E6FFF5; }
+.feature-item h3 { font-size: 1rem; margin-bottom: 4px; color: var(--secondary); }
+.feature-item p { font-size: 0.85rem; margin: 0; color: var(--secondary-light); line-height: 1.4; }
 
-.feature-red { border-left: 5px solid #FF7675; }
-.feature-red .feature-icon { color: #FF7675; background: #FFF0F0; }
+.feature-img-wrapper {
+    flex-shrink: 0;
+    width: 80px; height: 80px;
+    display: flex; align-items: center; justify-content: center;
+    z-index: 1;
+}
 
-.feature-blue { border-left: 5px solid #0984E3; }
-.feature-blue .feature-icon { color: #0984E3; background: #E3F2FD; }
+.feature-png {
+    width: 100%; height: auto;
+    object-fit: contain;
+    filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));
+}
+
+/* Feature Card Accents & Backgrounds */
+.feature-green { background: linear-gradient(135deg, #ffffff 0%, #E6FFF5 100%); border: 1px solid #E6FFF5; }
+.feature-green h3 { color: #00B894; }
+
+.feature-red { background: linear-gradient(135deg, #ffffff 0%, #FFF0F0 100%); border: 1px solid #FFF0F0; }
+.feature-red h3 { color: #FF7675; }
+
+.feature-blue { background: linear-gradient(135deg, #ffffff 0%, #E3F2FD 100%); border: 1px solid #E3F2FD; }
+.feature-blue h3 { color: #0984E3; }
+
 
 /* Promo Banner */
 .promo-banner {

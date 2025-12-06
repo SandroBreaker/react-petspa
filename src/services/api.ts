@@ -17,12 +17,13 @@ export const api = {
       return data as Profile;
     },
     async signIn(email: string, pass: string) {
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password: pass });
-      if (error) throw error;
-      return data;
+      // Retorna o objeto de resposta completo { data, error }
+      // Isso previne o erro "Cannot read properties of undefined" no App.tsx
+      return await supabase.auth.signInWithPassword({ email, password: pass });
     },
     async signUp(email: string, pass: string, name: string, phone: string) {
-      const { data, error } = await supabase.auth.signUp({
+      // Retorna o objeto de resposta completo { data, error }
+      return await supabase.auth.signUp({
         email,
         password: pass,
         options: {
@@ -30,8 +31,6 @@ export const api = {
           emailRedirectTo: window.location.origin
         }
       });
-      if (error) throw error;
-      return data;
     },
     async signOut() {
       return supabase.auth.signOut();

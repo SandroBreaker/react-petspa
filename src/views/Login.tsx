@@ -22,8 +22,11 @@ export const LoginPage: React.FC<AuthPageProps> = ({ onNavigate, setLoginStage }
        setErrorMsg('');
        
        try { 
-         // Local loading state used instead of global overlay for better error handling visibility
-         await api.auth.signIn(email, pass); 
+         // api.auth.signIn now returns { data, error } instead of throwing
+         const { error } = await api.auth.signIn(email, pass); 
+         
+         if (error) throw error; // Re-throw to catch block
+
          setLoginStage('welcome');
        } 
        catch (err: any) { 
@@ -111,8 +114,10 @@ export const RegisterPage: React.FC<AuthPageProps> = ({ onNavigate, setLoginStag
 
        try { 
          // Call API
-         const data = await api.auth.signUp(email, pass, name, phone);
+         const { data, error } = await api.auth.signUp(email, pass, name, phone);
          
+         if (error) throw error;
+
          if (data.session) {
              // Caso 1: Sessão criada imediatamente (sem confirmação de email)
              setLoginStage('welcome');
