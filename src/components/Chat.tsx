@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { api } from '../services/api';
 import { geminiService } from '../services/gemini.ts';
-import { Send, Sparkles, Bot } from 'lucide-react';
+import { Send, Sparkles, Bot, ChevronLeft, User } from 'lucide-react';
 
 interface ChatProps {
   onClose?: () => void;
@@ -24,14 +24,27 @@ export const Chat: React.FC<ChatProps> = ({ onNavigate }) => {
   const [mode, setMode] = useState<'flow' | 'ai'>('flow');
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   
   // Estados de Input
-  const [inputType, setInputType] = useState<'text' | 'number' | 'datetime-local' | null>('text'); // Default text para IA
+  const [inputType, setInputType] = useState<'text' | 'number' | 'datetime-local' | null>('text');
   const [inputValue, setInputValue] = useState('');
   const [inputHandler, setInputHandler] = useState<((val: string) => Promise<string>) | null>(null);
 
-  const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  useEffect(scrollToBottom, [messages, isTyping, inputType]);
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, isTyping, inputType]);
+
+  // Adjust scroll when keyboard opens (window resize)
+  useEffect(() => {
+    const handleResize = () => scrollToBottom();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const addMessage = (text: string, sender: 'bot' | 'user', options: any[] = []) => {
     setMessages(prev => [...prev, { id: Date.now().toString(), text, sender, options }]);
@@ -40,35 +53,35 @@ export const Chat: React.FC<ChatProps> = ({ onNavigate }) => {
   // --- LÓGICA DE MÁQUINA DE ESTADOS (Fluxo Rígido) ---
   const processNode = async (nodeId: string) => {
     setIsTyping(true);
-    setMode('flow'); // Entra em modo fluxo
-    await new Promise(r => setTimeout(r, 600));
+    setMode('flow');
+    await new Promise(r => setTimeout(r, 600)); // Simulando "thinking"
     setIsTyping(false);
 
     let node: any = {};
 
     switch (nodeId) {
       case 'START':
-        setInputType('text'); // Permite digitar para IA
+        setInputType('text');
         node = {
-          message: 'Olá! Sou o assistente virtual da PetSpa 🐶. Use os botões abaixo para ações rápidas ou **digite sua dúvida** para falar com minha IA!',
+          message: 'Olá! Sou o assistente virtual da PetSpa 🐶. Como posso te ajudar hoje?',
           options: [
             { label: '📅 Agendar Banho', nextNode: 'FLOW_SCHEDULE_INIT' },
-            { label: '🧠 Dicas & Curiosidades', action: 'startAiChat' },
+            { label: '🧠 Dicas com IA', action: 'startAiChat' },
             { label: '🐾 Meus Pets', nextNode: 'CHECK_AUTH_PETS' },
-            { label: '👩‍💻 Falar com Humano', nextNode: 'CONTACT' }
+            { label: '📍 Endereço e Contato', nextNode: 'CONTACT' }
           ]
         };
         break;
       
       case 'FLOW_SCHEDULE_INIT':
-        setInputType(null); // Bloqueia texto livre durante fluxo crítico
+        setInputType(null);
         const user = await api.auth.getSession();
         if (!user) {
-          node = { message: 'Para agendar, preciso que entre na sua conta.', options: [{ label: '🔐 Login', action: 'navLogin' }, { label: '⬅️ Voltar', nextNode: 'START' }] };
+          node = { message: 'Para agendar, preciso que entre na sua conta.', options: [{ label: '🔐 Fazer Login', action: 'navLogin' }, { label: '⬅️ Voltar', nextNode: 'START' }] };
         } else {
           const pets = await api.booking.getMyPets(user.user.id);
           if (pets.length === 0) {
-            node = { message: 'Você ainda não tem pets. Vamos cadastrar?', options: [{ label: 'Sim', nextNode: 'START' }] };
+            node = { message: 'Você ainda não tem pets cadastrados no sistema.', options: [{ label: 'Cadastrar Agora', action: 'navProfile' }, { label: 'Voltar', nextNode: 'START' }] };
           } else {
             node = {
               message: 'Para qual pet seria o agendamento?',
@@ -86,7 +99,7 @@ export const Chat: React.FC<ChatProps> = ({ onNavigate }) => {
       case 'FLOW_SCHEDULE_SERVICE':
         const services = await api.booking.getServices();
         node = {
-          message: 'Qual serviço vamos realizar?',
+          message: 'Qual serviço você gostaria?',
           options: services.map(s => ({
             label: `${s.name} (R$ ${s.price})`,
             action: 'setFlowData',
@@ -97,7 +110,7 @@ export const Chat: React.FC<ChatProps> = ({ onNavigate }) => {
         break;
 
       case 'FLOW_SCHEDULE_DATE':
-        node = { message: 'Selecione a data e hora:' };
+        node = { message: 'Por favor, selecione a data e o horário:' };
         setInputType('datetime-local');
         setInputHandler(() => async (val: string) => {
           setFlowContext((prev: any) => ({ ...prev, appointmentTime: val }));
@@ -111,7 +124,7 @@ export const Chat: React.FC<ChatProps> = ({ onNavigate }) => {
         node = {
           message: `Confirmando: Banho dia ${dateStr}. Posso agendar?`,
           options: [
-            { label: '✅ Sim', action: 'finalizeSchedule', nextNode: 'END_SUCCESS' },
+            { label: '✅ Confirmar Agendamento', action: 'finalizeSchedule', nextNode: 'END_SUCCESS' },
             { label: '❌ Cancelar', nextNode: 'START' }
           ]
         };
@@ -119,29 +132,29 @@ export const Chat: React.FC<ChatProps> = ({ onNavigate }) => {
 
       case 'END_SUCCESS':
         node = { 
-          message: 'Agendamento realizado com sucesso! 🐾', 
-          options: [{ label: '👀 Ver Pedidos', action: 'navTracker' }, { label: '🏠 Menu', nextNode: 'START' }] 
+          message: 'Perfeito! Seu agendamento foi realizado. 🐾', 
+          options: [{ label: '👀 Acompanhar Pedido', action: 'navTracker' }, { label: '🏠 Voltar ao Início', nextNode: 'START' }] 
         };
         break;
 
       case 'CONTACT':
         node = {
-           message: 'Você pode nos ligar no (11) 99999-9999 ou nos visitar na Av. Pet, 123.',
-           options: [{ label: 'Voltar', nextNode: 'START' }]
+           message: 'Estamos na Av. Pet, 123.\n📞 Tel: (11) 99999-9999\n⏰ Seg-Sex: 09h às 18h',
+           options: [{ label: 'Obrigado', nextNode: 'START' }]
         };
         break;
       
       case 'CHECK_AUTH_PETS':
          const session = await api.auth.getSession();
          if(!session) {
-            node = { message: 'Faça login primeiro.', options: [{label: 'Login', action: 'navLogin'}] };
+            node = { message: 'Você precisa estar logado.', options: [{label: 'Fazer Login', action: 'navLogin'}] };
          } else {
             const myPets = await api.booking.getMyPets(session.user.id);
             const petsList = myPets.length ? myPets.map(p => p.name).join(', ') : 'Nenhum pet encontrado.';
             node = { 
-                message: `Seus pets: ${petsList}`, 
+                message: `Seus pets cadastrados: ${petsList}`, 
                 options: [
-                    {label: '👤 Ver Detalhes no Perfil', action: 'navProfile'},
+                    {label: '👤 Ir para Perfil', action: 'navProfile'},
                     {label: 'Voltar', nextNode: 'START'}
                 ] 
             };
@@ -149,7 +162,7 @@ export const Chat: React.FC<ChatProps> = ({ onNavigate }) => {
          break;
 
       default:
-        node = { message: 'Entendido.', options: [{ label: 'Menu', nextNode: 'START' }] };
+        node = { message: 'Entendido.', options: [{ label: 'Menu Principal', nextNode: 'START' }] };
     }
 
     if (node.message) addMessage(node.message, 'bot', node.options);
@@ -161,7 +174,7 @@ export const Chat: React.FC<ChatProps> = ({ onNavigate }) => {
     // Actions Específicas
     if (opt.action === 'startAiChat') {
         setMode('ai');
-        addMessage('Modo Inteligente ativado! 🧠\nPode perguntar sobre cuidados, raças, preços ou dicas.', 'bot', [{label: 'Voltar ao Menu', nextNode: 'START'}]);
+        addMessage('Modo IA ativado! 🧠\nPergunte sobre raças, dicas de saúde ou cuidados.', 'bot', [{label: 'Encerrar IA', nextNode: 'START'}]);
         return;
     }
 
@@ -180,40 +193,35 @@ export const Chat: React.FC<ChatProps> = ({ onNavigate }) => {
          const end = new Date(start.getTime() + (serviceDuration || 60) * 60000);
          const session = await api.auth.getSession();
          if(session) await api.booking.createAppointment(session.user.id, petId, serviceId, start.toISOString(), end.toISOString());
-      } catch (e) { console.error(e); addMessage("Erro ao agendar.", 'bot'); }
+      } catch (e) { console.error(e); addMessage("Houve um erro técnico.", 'bot'); }
     }
 
     if (opt.action === 'navLogin') onNavigate('login');
     if (opt.action === 'navTracker') onNavigate('dashboard');
     if (opt.action === 'navProfile') onNavigate('user-profile');
 
-    // Navegação de Nós
     if (opt.nextNode) processNode(opt.nextNode);
   };
 
-  // --- HANDLER DE ENVIO (Input Texto/Form) ---
   const handleInputSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputValue.trim()) return;
     
-    // Exibe mensagem do usuário
     const userText = inputType === 'datetime-local' ? new Date(inputValue).toLocaleString() : inputValue;
     addMessage(userText, 'user');
     const rawVal = inputValue;
     setInputValue('');
 
-    // 1. Se estiver num fluxo de formulário (inputHandler definido), segue o fluxo
+    // 1. Fluxo de Input Específico
     if (inputHandler) {
-        setInputType(null); // Esconde input até o próximo comando
+        setInputType(null); 
         const nextNode = await inputHandler(rawVal);
         processNode(nextNode);
         return;
     }
 
-    // 2. Se não for fluxo, envia para o Gemini AI
+    // 2. Chat Inteligente (Gemini)
     setIsTyping(true);
-    
-    // Prepara histórico simples para o Gemini (últimas 6 mensagens para contexto)
     const history = messages.slice(-6).map(m => ({
         role: m.sender === 'user' ? 'user' : 'model',
         parts: [{ text: m.text }]
@@ -222,7 +230,7 @@ export const Chat: React.FC<ChatProps> = ({ onNavigate }) => {
     const aiResponse = await geminiService.sendMessage(history, rawVal);
     
     setIsTyping(false);
-    addMessage(aiResponse, 'bot', [{ label: 'Voltar ao Menu', nextNode: 'START' }]);
+    addMessage(aiResponse, 'bot', [{ label: 'Menu Principal', nextNode: 'START' }]);
   };
 
   useEffect(() => {
@@ -230,58 +238,92 @@ export const Chat: React.FC<ChatProps> = ({ onNavigate }) => {
   }, []);
 
   return (
-    <div id="chat-layout" className="fade-in" style={{ height: 'calc(100vh - 140px)', display: 'flex', flexDirection: 'column' }}>
-      <div className="chat-header">
-        <div className="chat-bot-avatar">
-            {mode === 'ai' ? <Sparkles size={24} /> : <Bot size={24} />}
-        </div>
-        <div className="chat-header-text">
-          <h3>Assistente PetSpa</h3>
-          <span>{mode === 'ai' ? 'Gemini AI Conectado 🧠' : 'Atendimento Automático'}</span>
+    <div className="chat-layout">
+      {/* Header Fixo */}
+      <div className="chat-header-modern">
+        <button onClick={() => onNavigate('home')} className="btn-icon-sm btn-ghost-white">
+          <ChevronLeft />
+        </button>
+        <div className="chat-header-info">
+          <div className="chat-avatar-ring">
+             {mode === 'ai' ? <Sparkles size={20} /> : <Bot size={20} />}
+          </div>
+          <div>
+            <h3 className="chat-title">Assistente PetSpa</h3>
+            <div className="chat-status">
+              <span className="status-dot"></span>
+              {mode === 'ai' ? 'IA Conectada' : 'Online'}
+            </div>
+          </div>
         </div>
       </div>
       
-      <div id="chat-history" style={{ flex: 1, padding: '24px', overflowY: 'auto' }}>
+      {/* Lista de Mensagens (Scroll) */}
+      <div className="chat-messages-area">
+        <div className="chat-date-divider">
+           <span>Hoje</span>
+        </div>
+
         {messages.map((msg) => (
-          <div key={msg.id} className={`chat-bubble ${msg.sender}`} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <div dangerouslySetInnerHTML={{ __html: msg.text.replace(/\n/g, '<br/>') }} />
-            {msg.sender === 'bot' && msg.options && (
-               <div className="chat-options-container">
-                 {msg.options.map((opt, idx) => (
-                   <button key={idx} className="chat-option-btn" onClick={() => handleOption(opt)}>
-                     {opt.label}
-                   </button>
-                 ))}
-               </div>
+          <div key={msg.id} className={`chat-row ${msg.sender === 'user' ? 'row-user' : 'row-bot'}`}>
+            {msg.sender === 'bot' && (
+                <div className="chat-msg-avatar">
+                   {mode === 'ai' ? <Sparkles size={14} /> : <Bot size={14} />}
+                </div>
+            )}
+            
+            <div className="chat-bubble-group">
+                <div className={`chat-bubble ${msg.sender === 'user' ? 'bubble-user' : 'bubble-bot'}`}>
+                  <div dangerouslySetInnerHTML={{ __html: msg.text.replace(/\n/g, '<br/>') }} />
+                </div>
+
+                {msg.sender === 'bot' && msg.options && msg.options.length > 0 && (
+                  <div className="chat-options-grid fade-in-slide">
+                    {msg.options.map((opt, idx) => (
+                      <button key={idx} className="chat-chip-btn" onClick={() => handleOption(opt)}>
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+            </div>
+            
+            {msg.sender === 'user' && (
+                <div className="chat-msg-avatar user-avatar-icon">
+                    <User size={14} />
+                </div>
             )}
           </div>
         ))}
+
         {isTyping && (
-           <div className="chat-bubble bot" style={{ width: 60 }}>
-             <span style={{ animation: 'pulse 1s infinite' }}>...</span>
+           <div className="chat-row row-bot">
+             <div className="chat-msg-avatar"><Bot size={14} /></div>
+             <div className="chat-bubble bubble-bot typing-bubble">
+               <span className="dot"></span><span className="dot"></span><span className="dot"></span>
+             </div>
            </div>
         )}
-        <div ref={messagesEndRef} />
+        <div ref={messagesEndRef} style={{ height: 1 }} />
       </div>
 
-      {/* Área de Input - Sempre visível se inputType != null */}
+      {/* Input Area (Footer) */}
       {inputType && (
-          <form onSubmit={handleInputSubmit} className="chat-inline-form fade-in" style={{ padding: '16px', background: 'white', borderTop: '1px solid #eee', display: 'flex', gap: 10 }}>
+          <form onSubmit={handleInputSubmit} className="chat-footer-modern">
              <input 
+               ref={inputRef}
                type={inputType} 
-               className="chat-input-inline" 
+               className="chat-input-modern" 
                value={inputValue} 
                onChange={e => setInputValue(e.target.value)}
-               placeholder={inputType === 'datetime-local' ? '' : (mode === 'ai' ? 'Pergunte algo à IA...' : 'Digite aqui...')}
+               placeholder={inputType === 'datetime-local' ? '' : (mode === 'ai' ? 'Digite para a IA...' : 'Digite sua resposta...')}
                min={inputType === 'datetime-local' ? new Date().toISOString().slice(0,16) : undefined}
-               style={{ flex: 1, border: '1px solid #ddd', borderRadius: '20px', padding: '0 16px', height: '44px' }}
-               autoFocus
              />
-             <button type="submit" className="btn-icon-sm" style={{ background: 'var(--primary)', color: 'white', width: 44, height: 44 }}>
-                <Send size={18} />
+             <button type="submit" className="chat-send-btn" disabled={!inputValue.trim()}>
+                <Send size={20} />
              </button>
           </form>
-        )}
+      )}
     </div>
   );
 };
