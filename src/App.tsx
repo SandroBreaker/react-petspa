@@ -8,7 +8,7 @@ import { Marketplace } from './components/Marketplace';
 import { AdminPanel } from './components/Admin';
 import { Logo } from './components/Logo';
 import { useToast } from './context/ToastContext';
-import { Home, Sparkles, ShoppingBag, MessageCircle, Calendar, User, Menu, X, LogOut, Scissors, Droplet, Heart, CheckCircle, Clock, MapPin, Phone, Shield, ChevronLeft, CalendarDays, DollarSign, Plus } from 'lucide-react';
+import { Home, Sparkles, ShoppingBag, MessageCircle, Calendar, User, Menu, X, LogOut, Scissors, Droplet, Heart, CheckCircle, Clock, MapPin, Phone, Shield, ChevronLeft, CalendarDays, DollarSign, Plus, Star, Award, ShieldCheck } from 'lucide-react';
 import { formatCurrency, formatDate } from './utils/ui';
 
 // --- Routing ---
@@ -89,6 +89,30 @@ export default function App() {
   };
 
   // --- Components ---
+
+  const Mascot = () => {
+      if (showBookingModal || view === 'chat') return null;
+      
+      return (
+          <div className="mascot-container fade-in-slide">
+              <div className="speech-bubble" onClick={() => session ? setShowBookingModal(true) : navigateTo('login')}>
+                  Vamos agendar? 🛁
+              </div>
+              <img 
+                  src="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExM3Z5a2Z5a2Z5a2Z5a2Z5a2Z5a2Z5/26u4lODA9qiLErD4A/giphy.gif" 
+                  // Fallback ou URL de um cachorro 3D fofo com fundo transparente
+                  // Usando um placeholder transparente de alta qualidade se o link quebrar, 
+                  // mas idealmente seria um GIF hospedado localmente.
+                  onError={(e) => {
+                      (e.target as HTMLImageElement).src = "https://cdn3d.iconscout.com/3d/premium/thumb/dog-5466380-4592070.png";
+                  }}
+                  className="mascot-gif"
+                  alt="Mascote PetSpa"
+                  onClick={() => session ? setShowBookingModal(true) : navigateTo('login')}
+              />
+          </div>
+      );
+  };
 
   const BookingWizard = ({ onClose }: { onClose: () => void }) => {
       const [step, setStep] = useState(1);
@@ -244,6 +268,59 @@ export default function App() {
             </div>
             <div className="service-preview-card" onClick={() => navigateTo('marketplace')}>
                 <div className="service-preview-icon"><ShoppingBag /></div><h4>Boutique</h4>
+            </div>
+         </div>
+         
+         {/* Green Area Content: Why Us */}
+         <div className="features-section">
+             <h2 className="section-title">Por que a PetSpa?</h2>
+             <div className="features-grid">
+                <div className="feature-item">
+                    <div className="feature-icon"><Award /></div>
+                    <h3>Profissionais Certificados</h3>
+                    <p>Equipe treinada para lidar com todos os temperamentos.</p>
+                </div>
+                <div className="feature-item">
+                    <div className="feature-icon"><ShieldCheck /></div>
+                    <h3>Ambiente Seguro</h3>
+                    <p>Monitoramento e higienização hospitalar constante.</p>
+                </div>
+                <div className="feature-item">
+                    <div className="feature-icon"><Heart /></div>
+                    <h3>Amor em cada detalhe</h3>
+                    <p>Produtos hipoalergênicos e tratamento VIP.</p>
+                </div>
+             </div>
+         </div>
+
+         {/* Promo Banner */}
+         <div className="promo-banner mt-4 clickable-card" onClick={() => session ? setShowBookingModal(true) : navigateTo('login')}>
+            <div className="promo-content">
+                <h3>Primeira vez aqui? 🎁</h3>
+                <p>Ganhe <strong>10% OFF</strong> no primeiro banho agendando pelo app!</p>
+            </div>
+            <div className="promo-decoration">🧼</div>
+         </div>
+
+         {/* Testimonials */}
+         <div className="testimonials-section mt-4">
+            <h2 className="section-title">Quem ama, recomenda</h2>
+            <div className="testimonials-scroll">
+                <div className="testimonial-card">
+                    <div className="stars">⭐⭐⭐⭐⭐</div>
+                    <p>"A Mel nunca voltou tão cheirosa! O atendimento é impecável."</p>
+                    <small>— Ana P.</small>
+                </div>
+                <div className="testimonial-card">
+                    <div className="stars">⭐⭐⭐⭐⭐</div>
+                    <p>"Adoro a facilidade de agendar pelo app. Super prático!"</p>
+                    <small>— Carlos M.</small>
+                </div>
+                <div className="testimonial-card">
+                    <div className="stars">⭐⭐⭐⭐⭐</div>
+                    <p>"Confio de olhos fechados. Trataram meu Thor como rei."</p>
+                    <small>— Julia S.</small>
+                </div>
             </div>
          </div>
       </div>
@@ -575,6 +652,8 @@ export default function App() {
   return (
     <div className={view === 'chat' ? 'mode-chat' : ''}>
        {showBookingModal && <BookingWizard onClose={() => setShowBookingModal(false)} />}
+       
+       <Mascot />
 
        {/* Mobile Header */}
        <div className="mobile-header-bar">
