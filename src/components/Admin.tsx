@@ -3,26 +3,36 @@ import { api } from '../services/api';
 import { Appointment } from '../types';
 import { formatDate, formatCurrency } from '../utils/ui';
 import { Calendar, LayoutDashboard, ListTodo, Clock, User, Phone } from 'lucide-react';
+import { useToast } from '../context/ToastContext';
 
 export const AdminPanel: React.FC = () => {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [view, setView] = useState<'dashboard' | 'kanban' | 'agenda'>('agenda');
   const [loading, setLoading] = useState(true);
+  const toast = useToast();
 
   const fetchData = async () => {
     setLoading(true);
     try {
       const apps = await api.admin.getAllAppointments();
       setAppointments(apps);
-    } catch (e) { console.error(e); }
+    } catch (e) { 
+        console.error(e); 
+        toast.error('Erro ao carregar dados');
+    }
     finally { setLoading(false); }
   };
 
   useEffect(() => { fetchData(); }, []);
 
   const updateStatus = async (id: number, status: string) => {
-     await api.admin.updateStatus(id, status);
-     fetchData();
+     try {
+        await api.admin.updateStatus(id, status);
+        toast.success(`Status atualizado para ${status}`);
+        fetchData();
+     } catch (e) {
+        toast.error('Erro ao atualizar status');
+     }
   };
 
   // --- Views ---

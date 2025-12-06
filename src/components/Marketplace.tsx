@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Product } from '../types';
 import { ShoppingBag, X, Plus, Trash2, ShoppingCart } from 'lucide-react';
 import { formatCurrency } from '../utils/ui';
+import { useToast } from '../context/ToastContext';
 
 const PRODUCTS_DB: Product[] = [
     { id: 1, name: 'Ração Premium Adulto', category: 'food', price: 149.90, stock_quantity: 10, image: 'https://images.unsplash.com/photo-1589924691195-41432c84c161?auto=format&fit=crop&w=400&q=80', description: 'Sabor Frango.' },
@@ -14,6 +15,7 @@ export const Marketplace: React.FC = () => {
   const [cart, setCart] = useState<Product[]>([]);
   const [category, setCategory] = useState<string>('all');
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const toast = useToast();
 
   useEffect(() => {
     const saved = localStorage.getItem('petspa_cart');
@@ -25,6 +27,7 @@ export const Marketplace: React.FC = () => {
     setCart(newCart);
     localStorage.setItem('petspa_cart', JSON.stringify(newCart));
     setIsCartOpen(true);
+    toast.success('Produto adicionado à sacola!');
   };
 
   const removeFromCart = (idx: number) => {
@@ -36,6 +39,13 @@ export const Marketplace: React.FC = () => {
 
   const filtered = category === 'all' ? PRODUCTS_DB : PRODUCTS_DB.filter(p => p.category === category);
   const total = cart.reduce((acc, item) => acc + item.price, 0);
+
+  const handleCheckout = () => {
+    toast.success('Pedido realizado com sucesso! 🎉');
+    setCart([]);
+    localStorage.removeItem('petspa_cart');
+    setIsCartOpen(false);
+  };
 
   return (
     <div className="container" style={{ paddingTop: 20 }}>
@@ -102,7 +112,7 @@ export const Marketplace: React.FC = () => {
          </div>
          <div className="cart-footer">
             <div className="cart-total-row"><span>Total</span><strong>{formatCurrency(total)}</strong></div>
-            <button className="btn btn-primary" onClick={() => { alert('Pedido realizado!'); setCart([]); setIsCartOpen(false); }}>Finalizar Compra</button>
+            <button className="btn btn-primary" disabled={cart.length === 0} onClick={handleCheckout}>Finalizar Compra</button>
          </div>
       </div>
     </div>

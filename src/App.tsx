@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from './lib/supabase';
 import { api } from './services/api';
@@ -5,6 +6,8 @@ import { Profile, Appointment, Pet, Service } from './types';
 import { Chat } from './components/Chat';
 import { Marketplace } from './components/Marketplace';
 import { AdminPanel } from './components/Admin';
+import { Logo } from './components/Logo';
+import { useToast } from './context/ToastContext';
 import { Home, Sparkles, ShoppingBag, MessageCircle, Calendar, User, Menu, X, LogOut, Scissors, Droplet, Heart, CheckCircle, Clock, MapPin, Phone, Shield, ChevronLeft, CalendarDays, DollarSign, Plus } from 'lucide-react';
 import { formatCurrency, formatDate } from './utils/ui';
 
@@ -16,6 +19,7 @@ export default function App() {
   const [session, setSession] = useState<any>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(false);
+  const toast = useToast();
   
   // Data State
   const [pets, setPets] = useState<Pet[]>([]);
@@ -75,6 +79,7 @@ export default function App() {
 
   const handleLogout = async () => {
     await api.auth.signOut();
+    toast.info('Até logo! 👋');
     setView('home');
   };
 
@@ -90,21 +95,22 @@ export default function App() {
       const [wizPet, setWizPet] = useState<number | null>(null);
       const [wizService, setWizService] = useState<Service | null>(null);
       const [wizDate, setWizDate] = useState('');
+      const [isBooking, setIsBooking] = useState(false);
 
       const handleConfirm = async () => {
           if(!wizPet || !wizService || !wizDate) return;
           try {
-              setLoading(true);
+              setIsBooking(true);
               const start = new Date(wizDate);
               const end = new Date(start.getTime() + wizService.duration_minutes * 60000);
               await api.booking.createAppointment(session.user.id, wizPet, wizService.id, start.toISOString(), end.toISOString());
               await loadUserData(session.user.id);
-              alert('Agendamento realizado com sucesso! 🐾');
+              toast.success('Agendamento realizado com sucesso! 🐾');
               onClose();
           } catch (e) {
-              alert('Erro ao agendar. Tente novamente.');
+              toast.error('Erro ao agendar. Tente novamente.');
           } finally {
-              setLoading(false);
+              setIsBooking(false);
           }
       };
 
@@ -191,8 +197,12 @@ export default function App() {
 
                               <div className="wizard-actions">
                                   <button className="btn btn-ghost" onClick={() => setStep(2)}>Voltar</button>
-                                  <button className="btn btn-primary" disabled={!wizDate || loading} onClick={handleConfirm}>
-                                      {loading ? 'Agendando...' : 'Confirmar Agendamento'}
+                                  <button 
+                                    className={`btn btn-primary ${isBooking ? 'loading' : ''}`} 
+                                    disabled={!wizDate || isBooking} 
+                                    onClick={handleConfirm}
+                                  >
+                                      {isBooking ? 'Agendando...' : 'Confirmar Agendamento'}
                                   </button>
                               </div>
                           </div>
@@ -271,19 +281,35 @@ export default function App() {
   const LoginPage = () => {
     const [email, setEmail] = useState('');
     const [pass, setPass] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
     const handleSubmit = async (e: React.FormEvent) => {
-       e.preventDefault(); setLoading(true);
-       try { await api.auth.signIn(email, pass); navigateTo('dashboard'); } 
-       catch (err: any) { alert(err.message); } finally { setLoading(false); }
+       e.preventDefault(); 
+       setIsSubmitting(true);
+       try { 
+         await api.auth.signIn(email, pass); 
+         toast.success('Login realizado com sucesso!');
+         navigateTo('dashboard'); 
+       } 
+       catch (err: any) { 
+         toast.error(err.message || 'Erro no login.');
+       } finally { 
+         setIsSubmitting(false); 
+       }
     };
     return (
-      <div className="container auth-container">
-        <div className="card auth-card fade-in">
+      <div className="container auth-container" style={{display:'flex', alignItems:'center', justifyContent:'center', minHeight:'calc(100vh - 100px)'}}>
+        <div className="card auth-card fade-in" style={{width:'100%', maxWidth:400, textAlign:'center'}}>
+          <div style={{display:'flex', justifyContent:'center', marginBottom:20}}>
+            <Logo height={60} />
+          </div>
           <h1 className="auth-title">Bem-vindo</h1>
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit} style={{textAlign:'left'}}>
             <div className="form-group"><label>Email</label><input type="email" value={email} onChange={e=>setEmail(e.target.value)} required /></div>
             <div className="form-group"><label>Senha</label><input type="password" value={pass} onChange={e=>setPass(e.target.value)} required /></div>
-            <button className="btn btn-primary" style={{width:'100%'}}>Entrar</button>
+            <button className={`btn btn-primary full-width ${isSubmitting ? 'loading' : ''}`} disabled={isSubmitting}>
+              {isSubmitting ? 'Entrando...' : 'Entrar'}
+            </button>
           </form>
           <div className="auth-footer"><a href="#" onClick={()=>navigateTo('register')} className="auth-link">Criar conta</a></div>
         </div>
@@ -312,7 +338,7 @@ export default function App() {
 
        <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16}}>
             <h3>Meus Pets</h3>
-            <button className="btn-icon-sm" style={{width:32, height:32}} onClick={() => alert('Função criar pet aqui (Mock)')}><Plus size={16}/></button>
+            <button className="btn-icon-sm" style={{width:32, height:32}} onClick={() => toast.info('Funcionalidade de cadastro em desenvolvimento 🏗️')}><Plus size={16}/></button>
        </div>
        
        {pets.length === 0 ? <p>Nenhum pet cadastrado.</p> : (
@@ -552,13 +578,13 @@ export default function App() {
 
        {/* Mobile Header */}
        <div className="mobile-header-bar">
-          <div className="brand-text-mobile" onClick={() => navigateTo('home')}>🐾 PetSpa</div>
+          <Logo height={32} onClick={() => navigateTo('home')} />
           <button className="btn-icon-sm btn-icon-brand" onClick={() => navigateTo('chat')}><MessageCircle size={20}/></button>
        </div>
 
        {/* Desktop Nav */}
        <header className="desktop-nav">
-          <div className="brand-text-desktop" onClick={() => navigateTo('home')}>🐾 PetSpa</div>
+          <Logo height={40} onClick={() => navigateTo('home')} />
           <nav className="nav-links-desktop">
              <a href="#" className={`nav-link-item ${view === 'home' && 'active'}`} onClick={() => navigateTo('home')}>Início</a>
              <a href="#" className={`nav-link-item ${view === 'services' && 'active'}`} onClick={() => navigateTo('services')}>Serviços</a>
